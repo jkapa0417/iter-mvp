@@ -4,6 +4,33 @@
 
 ---
 
+### ADR-008 — Photo pipeline uses `photo_manager`, not `image_picker`, on Android (GPS scrubbing)
+
+**Status:** Accepted
+
+**Date:** 2026-05-15
+
+**Context:**
+F0.4 (EXIF spike) needs to extract GPS lat/lng/taken_at from real photos on a real Android device. First implementation used the canonical Flutter package `image_picker` to invoke the gallery picker. On a Galaxy Fold 5 (Android 16), every photo picked — even outdoor camera-taken shots known to carry GPS in the original file — returned `GPSLatitude = [0/0, 0/0, 0/0]` and `GPSLongitude = [0/0, 0/0, 0/0]` from the `exif` package, parsing to `NaN`. Adding `ACCESS_MEDIA_LOCATION` to AndroidManifest.xml and a full rebuild did NOT change the result.
+
+Root cause: Android 13+ ships a system **Photo Picker** component (`ACTION_PICK_IMAGES`) which `image_picker` invokes via the Activity Result Contracts API. This Photo Picker, by design, **unconditionally redacts location EXIF** from the returned file copy before the requesting app receives it. The redaction is a privacy hardening built into the system component itself — no permission flag, intent extra, or plugin parameter bypasses it. This is documented Android security behavior, not a bug.
+
+To get un-redacted EXIF on Android 13+ an app must either (a) use the older `Intent.ACTION_PICK` flow (deprecated, will break on future Android versions), (b) read directly from the MediaStore with `ACCESS_MEDIA_LOCATION` granted, or (c) ship a custom in-app gallery UI that talks to the asset library API.
+
+**Decision:**
+- Spike + future F2.x photo pipeline use **`photo_manager`** (Flutter package, ~3.6+). It implements path (b) above: queries MediaStore directly with `ACCESS_MEDIA_LOCATION`, returns `AssetEntity.originBytes` which carries full EXIF including unredacted GPS rationals.
+- The F0.4 spike screen now: (i) calls `PhotoManager.requestPermissionExtend(... mediaLocation: true)`, (ii) renders a horizontal strip of recent `AssetEntity` thumbnails, (iii) on tap reads `originBytes`, parses via `package:exif`, cross-checks against `AssetEntity.latlngAsync()`.
+- `image_picker` is removed from `app/pubspec.yaml`. F2.1 (photo picker UI) will be built on photo_manager primitives.
+
+**Consequences:**
+- F2.x design baseline: we ship our own thumbnail grid UI, we never rely on the Android system Photo Picker. iOS uses photo_manager too (single package across platforms, asks for "Full Access" permission per Apple docs).
+- Spike acceptance language updated: extraction is verified via the photo_manager path, not the image_picker path that the original SRS implied.
+- The `0/0` failure mode is preserved as an explicit `NaN` in the spike screen with a "OS likely stripped GPS — needs ACCESS_MEDIA_LOCATION or photo_manager" diagnostic; if it ever shows up after this ADR, it means photo_manager's permission request did not include `mediaLocation: true` (regression sentinel).
+- APK size grows ~1-2 MB from photo_manager's native side. Acceptable.
+- Android 14+ adds a "selected photos" partial-access permission mode; photo_manager handles this gracefully (PermissionState.limited), but UX needs to surface the "Select more photos" affordance later. Out of scope for the spike.
+
+---
+
 ### ADR-007 — Generated Dart client lives at project root `packages/openapi/`, not `app/lib/api/`
 
 **Status:** Accepted

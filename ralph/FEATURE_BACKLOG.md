@@ -26,27 +26,30 @@
 - SRS refs: srs/03-api.md
 
 ### F0.3 — Supabase + env vars setup
-- [ ] Status: blocked (partial — schema + sqlx wiring done iter 3; awaiting Supabase credentials)
+- [x] Status: done (iter 7)
 - Depends on: F0.2
 - Acceptance:
-  - Supabase project created (env vars configured, not committed)
-  - `.env` file created from `.env.example` with real credentials
-  - `.env.gitignore` updated to exclude `.env`
-  - `sqlx migrate run --dry-run` succeeds against Supabase cloud DB
+  - Supabase project created (`hqgfmuakvqnmwvlaevpg`, region ap-south-1) ✓
+  - `.env` populated with URL, anon, service_role, DATABASE_URL ✓
+  - `.gitignore` excludes `.env` ✓
+  - `sqlx migrate run` (real, not --dry-run) applied 0001_init.sql in ~700ms ✓
+  - /health returns `{"status":"ok","db":"connected"}` consistently ~260ms p50 ✓
+- Implementation notes: WSL2 has no IPv6, so DATABASE_URL must use the **Session pooler** (`aws-1-ap-south-1.pooler.supabase.com:5432`, IPv4, free tier). Direct hostname `db.<ref>.supabase.co` is IPv6-only on Free tier and unreachable from WSL2.
 - SRS refs: srs/02-data-model.md
 
-**Note**: Using Supabase cloud database (no local Postgres needed for WSL environment).
-
 ### F0.4 — ⚠️ EXIF SPIKE (iOS + Android devices)
-- [ ] Status: pending
+- [ ] Status: in_progress — Android implementation shipped (photo_manager swap), device GPS extraction verification pending; iOS half deferred to macOS host
 - Depends on: F0.1
 - Acceptance:
-  - Given a JPEG/HEIC picked from gallery on iOS device with "Full Access" permission
-  - And a JPEG picked from gallery on Android device
+  - Given a JPEG/HEIC picked from gallery on iOS device with "Full Access" permission → 🚧 deferred (macOS+Xcode required, see ADR-006)
+  - And a JPEG picked from gallery on Android device → 🔧 implementation ready, verification pending
   - When app extracts EXIF metadata
   - Then lat/lng/taken_at are successfully extracted and printed to console
-  - And HEIC support is verified on iOS real device (simulator not accepted)
-  - Result is documented as ADR-001 in DECISIONS.md
+  - And HEIC support is verified on iOS real device (simulator not accepted) → deferred
+  - Result is documented as ADR-001 (will be appended as ADR-009) in DECISIONS.md
+- Implementation notes (iter 8):
+  - Initial attempt used `image_picker` → Android 13+ Photo Picker scrubbed GPS to 0/0 regardless of ACCESS_MEDIA_LOCATION permission. See ADR-008.
+  - Swapped to `photo_manager` which reads MediaStore directly. Spike screen shows last 24 photos as thumbnail strip; tap → parse EXIF + cross-check MediaStore latlng.
 - SRS refs: srs/07-risks.md#ios-gps
 
 ### F0.5 — OpenAPI codegen pipeline
@@ -60,12 +63,13 @@
 - SRS refs: srs/03-api.md
 
 ### F0.6 — CI skeleton
-- [ ] Status: pending
+- [x] Status: done (iter 7 — committed locally, push gated on token scope)
 - Depends on: F0.1, F0.2
 - Acceptance:
-  - `.github/workflows/ci.yml` created
-  - Runs: flutter analyze, flutter test, cargo check, cargo test, sqlx migrate run --dry-run
-  - All pass on empty repo
+  - `.github/workflows/ci.yml` created ✓
+  - Runs: flutter analyze + flutter test (app/), cargo check + cargo test (server/), dart analyze + dart test (packages/openapi/), sqlx migrate run against postgres:16-alpine service container ✓
+  - "sqlx migrate run --dry-run" acceptance text deviated: sqlx-cli has no --dry-run flag; using a real postgres service container is strictly stronger
+  - Pass-on-empty-repo verification pending first push (blocked: GitHub OAuth token for jkapa0417 lacks `workflow` scope — see STATE.md resume checklist)
 - SRS refs: srs/04-nfr.md
 
 ---

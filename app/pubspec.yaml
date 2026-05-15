@@ -40,6 +40,9 @@ dependencies:
   # Picker which always scrubs location, regardless of permissions.
   photo_manager: ^3.6.0
   exif: ^3.3.0
+  maplibre_gl: ^0.26.1
+  supabase_flutter: ^2.12.4
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +65,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # F1.1 — bundle .env so flutter_dotenv can load Supabase URL + anon key at
+  # runtime. .env is gitignored; only SUPABASE_URL, SUPABASE_ANON_KEY, and
+  # MAP_TILE_URL are included (service_role stays server-side only).
+  assets:
+    - .env
 
   # To add assets to your application, add an assets section, like this:
   # assets:

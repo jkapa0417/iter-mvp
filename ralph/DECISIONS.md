@@ -4,6 +4,47 @@
 
 ---
 
+### ADR-010 — Home screen: 3D globe + 2D country drill-down (two-screen architecture)
+
+**Status:** Accepted
+
+**Date:** 2026-05-16
+
+**Context:**
+Original SRS (`srs/05-ui-design.md`, `srs/06-geo-logic.md`) framed the home screen as a single MapLibre 2D map. User pivot: home should be a **3D globe** the user spins to find a country, and tapping a country **drills down to a 2D map** of that country with pins. Visual direction: "modern, abstract, not Google-Earth-realistic" — flat color palette, no terrain/cloud textures, minimal labels.
+
+Spike of `maplibre_gl` v0.26.1 confirmed it does **not** expose MapLibre Native's globe projection (no `setProjection` / `globe` symbols across the plugin trio). One-map continuous-zoom is therefore not available without a custom plugin patch.
+
+Three forward paths were evaluated:
+
+- **A.** Standalone 3D globe widget (`flutter_earth_globe` v2.2.1, active April 2026) for the home view; MapLibre 2D for the country-detail view; **Hero/fade transition** between screens.
+- **B.** Patch `maplibre_gl` native bridges to expose `setProjection('globe')` → enables a single map with continuous zoom (true Google-Earth-style transition).
+- **C.** WebView with MapLibre GL JS (globe-capable on web).
+
+**Decision:**
+**Path A.** Two-screen home: 3D globe → 2D country map, joined by a Hero/fade transition (~400ms). Chosen because:
+- ~1 day vs ~2–3 days (B) or WebView UX trade-offs (C).
+- `flutter_earth_globe` surface is a custom equirectangular PNG, giving us pixel-level control of the globe's aesthetic (palette, abstraction level, country fills) without touching native code.
+- Visited countries rendered into the globe texture at runtime via Flutter Canvas API + Natural Earth GeoJSON (offline; no extra dependency).
+- Country pick on globe → fade to MapLibre 2D country view sharing the same color tokens. UX continuity comes from style consistency, not literal pixel-continuous zoom.
+
+**Consequences:**
+- Home view is `GlobeScreen` (3D), tap-to-drill-down navigates to `CountryMapScreen` (2D MapLibre with country-bounded camera).
+- SRS updates required (deferred until F3.x implementation actually starts; ADR is the source of truth meanwhile):
+  - `srs/05-ui-design.md` — home screen replaced with globe; country detail screen added.
+  - `srs/06-geo-logic.md` — "Map Rendering Stack" section gains `flutter_earth_globe` for the globe; MapLibre stays as-is for country detail.
+- `FEATURE_BACKLOG.md` F3.x re-mapped:
+  - F3.1 → 3D globe widget (was: MapLibre map widget)
+  - F3.2 → Render visited countries onto globe texture (was: render pins)
+  - F3.3 → Tap country → fade to 2D MapLibre country view
+  - F3.4 → Pins on 2D country view (was: country fill coloring)
+  - F3.5 → Country fill + depth coloring (lives on the 2D country view, and on the globe texture)
+  - The depth-coloring logic (`srs/06-geo-logic.md`) survives unchanged; it just rasterizes into the globe PNG + applies as MapLibre fill on country view.
+- Future-proofing: if `maplibre_gl` ships globe projection later, we can collapse to Path B (single map) in v1.x without a SRS rewrite — the visual is the same.
+- Performance ceiling: globe + a few hundred pins is fine on Fold-class devices. Thousands of pins would need clustering before placing on the globe; F3.2 keeps clustering as a known-required follow-up.
+
+---
+
 ### ADR-009 — F0.4 EXIF spike outcome (Android verified, iOS deferred)
 
 **Status:** Accepted

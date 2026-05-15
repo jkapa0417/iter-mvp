@@ -77,14 +77,30 @@
 
 ## F1 — Auth
 
-### F1.1 — Supabase Auth in Flutter
-- [ ] Status: pending
+### F1.1 — Supabase Auth in Flutter (email/password)
+- [x] Status: done (email/password; OAuth carved out as F1.1.5)
 - Depends on: F0.3
 - Acceptance:
-  - Apple + Google sign-in working
-  - Email/password auth working
-  - Auth state persists across app restarts
-  - Unauthenticated state shows login screen
+  - Apple + Google sign-in working → carved out to F1.1.5 (needs platform plumbing — Apple Developer entitlement, Google Client ID, redirect URIs)
+  - Email/password auth working ✓ (verified on Galaxy Z Fold 5 with `test@iter.local`)
+  - Auth state persists across app restarts ✓ (cold-launch lands on HomeScreen with active session)
+  - Unauthenticated state shows login screen ✓ (signed-out user lands on LoginScreen)
+- Implementation notes:
+  - `supabase_flutter` initialized in `main()` from `app/.env` (gitignored) via `flutter_dotenv`. Only `SUPABASE_URL` + `SUPABASE_ANON_KEY` go to the client; `SERVICE_ROLE_KEY` stays server-side.
+  - `_AuthGate` subscribes to `Supabase.instance.client.auth.onAuthStateChange` and renders LoginScreen vs HomeScreen accordingly.
+  - F0.4 EXIF spike screen replaced; the spike's outcome is preserved in ADR-009 + git history.
+- SRS refs: srs/01-functional.md#auth
+
+### F1.1.5 — OAuth sign-in (Apple + Google) — DEFERRED
+- [ ] Status: pending
+- Depends on: F1.1
+- Acceptance:
+  - Apple Sign-In configured (Apple Developer account, "Sign in with Apple" capability, services ID, redirect URI in Supabase)
+  - Google Sign-In configured (Google Cloud Console OAuth client ID, redirect URI in Supabase)
+  - Buttons on LoginScreen complete OAuth flow → session
+- Notes:
+  - LoginScreen already has the Apple/Google buttons wired with "coming soon" snackbars — UI shell ready.
+  - Cannot proceed without paid Apple Developer enrollment.
 - SRS refs: srs/01-functional.md#auth
 
 ### F1.2 — Rust JWT verification middleware
@@ -158,50 +174,65 @@
 
 ## F3 — World Map (Home)
 
-### F3.1 — MapLibre map widget
+> ⚠️ F3.x re-mapped in ADR-010 — home pivot to 3D globe + 2D country drill-down. Original "single MapLibre 2D map" plan superseded. SRS update deferred to F3 implementation.
+
+### F3.1 — 3D globe home widget (`flutter_earth_globe`)
 - [ ] Status: pending
 - Depends on: F1.3
 - Acceptance:
-  - Full-screen `maplibre_gl` map loads
-  - Vector tiles served from OpenFreeMap (env var `MAP_TILE_URL` overrideable for Stadia/MapTiler fallback)
-  - No API key required for default tile source
-  - Zoom/pan gestures work
-- SRS refs: srs/01-functional.md#home-screen, srs/06-geo-logic.md#map-rendering-stack
+  - Full-screen 3D globe loads on home tab
+  - Custom equirectangular PNG texture (modern flat-color palette, no terrain/clouds/labels)
+  - User can rotate, zoom, tap a country
+  - Tapping country navigates to F3.3 country detail screen
+- SRS refs: srs/05-ui-design.md (home), srs/06-geo-logic.md (rendering stack)
 
-### F3.2 — Render user's posts as pins
+### F3.2 — Render visited countries onto globe texture
 - [ ] Status: pending
 - Depends on: F3.1, F2.5
 - Acceptance:
-  - Posts loaded from API
+  - At app start, Flutter Canvas rasterizes Natural Earth country polygons → user's visited set → fill colors → PNG
+  - PNG fed to globe widget as surface texture
+  - Visited tint distinct from unvisited
+  - Re-rasters when visited set changes (new post)
+- SRS refs: srs/06-geo-logic.md (coloring)
+
+### F3.3 — Country tap → 2D MapLibre detail screen (Hero/fade)
+- [ ] Status: pending
+- Depends on: F3.1
+- Acceptance:
+  - Country tap on globe → ~400ms Hero/fade transition → `CountryMapScreen`
+  - Detail screen is full-screen `maplibre_gl` map, camera bounded to the tapped country
+  - Style JSON matches globe color tokens (no visual identity break)
+  - Back button returns to globe with reverse transition
+- SRS refs: srs/01-functional.md (home), srs/06-geo-logic.md (rendering stack)
+
+### F3.4 — Pins on the 2D country detail map
+- [ ] Status: pending
+- Depends on: F3.3, F2.5
+- Acceptance:
+  - Posts in the tapped country loaded from API
   - GeoJSON source with clustering
   - Custom pin markers with photo thumbnails
 - SRS refs: srs/05-ui-design.md#map-pins
 
-### F3.3 — Country fill coloring
+### F3.5 — Country + depth coloring (both globe and 2D)
 - [ ] Status: pending
-- Depends on: F3.2
+- Depends on: F3.2, F3.4
 - Acceptance:
-  - Visited countries filled
-  - Unvisited countries transparent
-  - Vector tile filter implementation
-- SRS refs: srs/06-geo-logic.md#coloring
+  - 5 depth levels per srs/06-geo-logic.md (visit count thresholds)
+  - Globe: deeper tint baked into texture per country
+  - 2D country view: matching fill via MapLibre layer filter
+  - Darker = more visited
+- SRS refs: srs/06-geo-logic.md (depth coloring)
 
-### F3.4 — Depth coloring
+### F3.6 — Tap pin → photo preview sheet
 - [ ] Status: pending
-- Depends on: F3.3
-- Acceptance:
-  - 5 depth levels (per srs/06-geo-logic.md)
-  - Darker fill = more visited
-- SRS refs: srs/06-geo-logic.md#depth-coloring
-
-### F3.5 — Tap pin → photo preview
-- [ ] Status: pending
-- Depends on: F3.2
+- Depends on: F3.4
 - Acceptance:
   - Tapping cluster opens expanded view
   - Tapping single pin opens photo sheet
   - Sheet shows caption, location, date
-- SRS refs: srs/01-functional.md#home-screen
+- SRS refs: srs/01-functional.md (home)
 
 ---
 

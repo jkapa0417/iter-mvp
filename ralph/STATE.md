@@ -1,10 +1,10 @@
 # Ralph Loop State
 
 ## Current
-- iteration: 8
-- last_completed: F0.3 (DB live), F0.4 Android (spike verified end-to-end), F0.6 (CI commit local)
-- in_progress: none for autonomous loop. Two human-only items remain — see resume checklist.
-- last_run_at: 2026-05-16T00:30:00Z
+- iteration: 9
+- last_completed: F1.1 (email/password auth verified on Fold 5; OAuth carved out as F1.1.5)
+- in_progress: none. Next autonomous candidate: F1.2 (Rust JWT verification middleware).
+- last_run_at: 2026-05-16T01:30:00Z
 
 ## Resume-now checklist (for next session)
 
@@ -19,6 +19,7 @@
 ## Recent (last 20)
 *This section will be trimmed to 20 entries by state-updater.*
 
+- F1.1 ✅ 2026-05-16 (iter 9) — DONE for email/password. supabase_flutter + flutter_dotenv wired. main.dart now bootstraps Supabase from app/.env (gitignored, only public keys client-side) and routes via _AuthGate (StreamBuilder on onAuthStateChange) between LoginScreen and HomeScreen. Verified on Galaxy Z Fold 5: sign-in with test@iter.local lands on HomeScreen; cold-restart preserves session and lands on HomeScreen automatically; sign-out returns to LoginScreen. Apple/Google sign-in buttons wired with "coming soon" snackbars — actual OAuth carved out as F1.1.5 (needs Apple Developer + Google Client ID setup). EXIF spike screen replaced (its result preserved in ADR-009 + git history). flutter analyze + flutter test green. Also: ADR-010 locks the F3 home pivot (3D globe + 2D country drill-down via flutter_earth_globe + maplibre_gl). F0.6 CI workflow first run was green end-to-end (6m27s, all 4 jobs).
 - F0.4 ✅ 2026-05-16 (iter 8 continued) — DONE for Android. Spike verified end-to-end on Galaxy Z Fold 5 (Android 16): a freshly captured outdoor photo yielded EXIF lat `37.568552`, lng `126.839713`, MediaStore latlng matching to 6 decimal places, DateTimeOriginal + camera Make/Model preserved. Confirms (a) photo_manager bypasses the Android 13+ Photo Picker redaction, (b) the `_gps` DMS-to-decimal helper is correct, (c) MediaStore and EXIF are two independent paths that agree (strong evidence). Spike screen also classified three real-world states: GPS present (camera-original), GPS zeroed (image_picker path, never on photo_manager), GPS absent (messenger-received photos, no Image Make/Model either). Newest-first ordering required explicit FilterOptionGroup. See ADR-009. iOS half remains environment-deferred.
 - F0.4 🔧 2026-05-15 (iter 8) — IN PROGRESS (later resolved above): First spike attempt with image_picker on Galaxy Fold 5 returned `[0/0, 0/0, 0/0]` regardless of ACCESS_MEDIA_LOCATION. Root cause: Android 13+ Photo Picker scrubs GPS at OS level. Swapped to photo_manager → custom thumbnail grid → originBytes → exif parse. See ADR-008.
 - F0.6 ✅ 2026-05-15 (iter 7) — DONE (commit local, push gated): `.github/workflows/ci.yml` with 4 jobs (rust check+test, flutter analyze+test, dart-openapi analyze+test, sqlx migrate against postgres:16-alpine service). Acceptance text said "sqlx migrate run --dry-run" but sqlx-cli has no such flag; running against a real Postgres service is strictly stronger. Push refused by GitHub because active `jkapa0417` OAuth token lacks `workflow` scope — user must run `gh auth refresh -h github.com -s workflow` once, then F0.5/F0.6/F0.3/F0.4 all push together.

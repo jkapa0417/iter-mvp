@@ -4,6 +4,31 @@
 
 ---
 
+### ADR-006 — F0.1 ships partial: Android verified, iOS deferred to macOS host
+
+**Status:** Accepted
+
+**Date:** 2026-05-15
+
+**Context:**
+F0.1's acceptance includes "Basic app runs on both platforms." The dev environment is WSL2 on Ubuntu 24.04 — iOS builds require macOS + Xcode + CocoaPods, none of which are available. Three options: (a) hard-block F0.1, (b) mark `done` and ignore the iOS half, (c) ship partial with iOS deferred.
+
+**Decision:**
+Option (c). In iteration 5:
+- `flutter create --org app.iter --project-name iter --platforms=ios,android app` ran cleanly. Both `app/android/` and `app/ios/` trees are scaffolded correctly per Flutter 3.41.9 stable defaults.
+- Android verified end-to-end: `flutter pub get` ✓, `flutter analyze` ✓ ("No issues found!"), `flutter test` ✓ ("All tests passed!"), `flutter build apk --debug` ✓ (145 MB APK at `app/build/app/outputs/flutter-apk/app-debug.apk`).
+- iOS scaffold present but `flutter build ios` not attempted — known unbuildable in WSL2.
+- Build dependencies installed during this iteration: `openjdk-21-jdk` (user ran `sudo apt install`), Android Build-Tools 35.0.0, CMake 3.22.1, NDK 28.2.13676358 (auto-installed by Gradle on first build).
+
+**Consequences:**
+- F0.1 acceptance "runs on both platforms" half-met. Future macOS contributor (or macOS-based CI runner — likely F0.6 territory) must run `cd app/ios && pod install && flutter build ios` to fully close F0.1.
+- F0.4 (EXIF spike) and F0.5 (Dart client generation) are unblocked since both only need `app/` to exist.
+- F1.1 (Supabase Auth in Flutter), F2.x (photo pipeline), F3.x (MapLibre map) can all begin once their other dependencies clear.
+- `~/.zshrc` now exports `PATH` for `~/flutter/bin` and `~/Android/cmdline-tools/latest/bin`; also exports `ANDROID_HOME=$HOME/Android` and `ANDROID_SDK_ROOT=$HOME/Android`. Builds also require `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` set in the shell (not yet in .zshrc — should be added before F0.6 CI).
+- Gradle daemon caching bit us on the first T5 attempt — second attempt with `./gradlew --stop` cleared the cache. Documented for future build issues.
+
+---
+
 ### ADR-005 — Swap Mapbox for MapLibre GL + OpenFreeMap vector tiles
 
 **Status:** Accepted

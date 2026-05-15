@@ -8,6 +8,18 @@ app/.pub-cache/
 app/.pub/
 app/pubspec.lock
 
+# Flutter — Android/iOS native build artifacts not covered by flutter create's .gitignore
+app/android/.gradle/
+app/android/local.properties
+app/android/key.properties
+app/android/app/upload-keystore.jks
+app/ios/Pods/
+app/ios/.symlinks/
+app/ios/Flutter/Flutter.framework
+app/ios/Flutter/Flutter.podspec
+app/.idea/
+app/iter.iml
+
 # Rust
 server/target/
 server/.sqlx/

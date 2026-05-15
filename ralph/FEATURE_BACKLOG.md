@@ -7,7 +7,7 @@
 ## F0 — Bootstrap
 
 ### F0.1 — Flutter app scaffold
-- [ ] Status: pending
+- [ ] Status: partial (Android verified iter 5: APK built + analyze + test green; iOS scaffolded but build unverified — needs macOS+Xcode or macOS CI runner)
 - Depends on: none
 - Acceptance:
   - `flutter create app/` with iOS + Android targets
@@ -50,7 +50,7 @@
 - SRS refs: srs/07-risks.md#ios-gps
 
 ### F0.5 — OpenAPI codegen pipeline
-- [ ] Status: blocked (partial — Rust /emit-openapi + script ready iter 4; Dart client gen waits on F0.1)
+- [ ] Status: partial (Rust emission iter 4; Dart client gen now unblocked since F0.1 scaffolded app/ in iter 5 — re-run scripts/codegen.sh to complete)
 - Depends on: F0.2
 - Acceptance:
   - `scripts/codegen.sh` runs end-to-end

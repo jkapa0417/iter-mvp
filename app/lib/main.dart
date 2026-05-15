@@ -69,9 +69,17 @@ class _ExifSpikeScreenState extends State<ExifSpikeScreen> {
         return;
       }
       setState(() => _status = 'Loading recent photos…');
+      // Default photo_manager order is ascending (oldest first). Force newest
+      // first so the user lands on recent travel/camera shots, not 2018 stuff.
+      final filterOption = FilterOptionGroup(
+        orders: [
+          const OrderOption(type: OrderOptionType.createDate, asc: false),
+        ],
+      );
       final albums = await PhotoManager.getAssetPathList(
         type: RequestType.image,
         onlyAll: true,
+        filterOption: filterOption,
       );
       if (albums.isEmpty) {
         setState(() {
@@ -80,11 +88,12 @@ class _ExifSpikeScreenState extends State<ExifSpikeScreen> {
         });
         return;
       }
-      final assets = await albums.first.getAssetListPaged(page: 0, size: 24);
+      final assets = await albums.first.getAssetListPaged(page: 0, size: 500);
       setState(() {
         _assets = assets;
         _busy = false;
-        _status = '${assets.length} recent photo(s). Tap one to parse EXIF.';
+        _status =
+            '${assets.length} photo(s) loaded. Scroll to find a GPS-tagged shot, then tap.';
       });
     } catch (e, st) {
       debugPrint('F0.4 _loadAssets error: $e\n$st');
@@ -93,6 +102,22 @@ class _ExifSpikeScreenState extends State<ExifSpikeScreen> {
         _busy = false;
       });
     }
+  }
+
+  Future<void> _onThumbTap(AssetEntity asset) async {
+    await _parseAsset(asset);
+    if (!mounted) return;
+    if (_exif == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => _ExifSheet(
+        exif: _exif!,
+        filePath: _filePath,
+        fileBytes: _fileBytes,
+      ),
+    );
   }
 
   Future<void> _parseAsset(AssetEntity asset) async {
@@ -195,57 +220,83 @@ class _ExifSpikeScreenState extends State<ExifSpikeScreen> {
                   child: Text('Error: $_error'),
                 ),
               ),
+            const SizedBox(height: 8),
             if (_assets.isNotEmpty)
-              SizedBox(
-                height: 120,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 3,
+                    crossAxisSpacing: 3,
+                  ),
                   itemCount: _assets.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 6),
                   itemBuilder: (context, i) {
                     final a = _assets[i];
                     return GestureDetector(
-                      onTap: _busy ? null : () => _parseAsset(a),
+                      onTap: _busy ? null : () => _onThumbTap(a),
                       child: _Thumb(asset: a),
                     );
                   },
                 ),
               ),
-            const SizedBox(height: 12),
-            if (_exif != null)
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _row('File', _filePath ?? ''),
-                      _row('Bytes', '${_fileBytes ?? 0}'),
-                      const Divider(),
-                      _row('EXIF lat', _exif!.lat ?? '(missing)'),
-                      _row('EXIF lng', _exif!.lng ?? '(missing)'),
-                      _row('MediaStore lat',
-                          _exif!.mediaLat?.toString() ?? '(missing)'),
-                      _row('MediaStore lng',
-                          _exif!.mediaLng?.toString() ?? '(missing)'),
-                      _row('taken_at', _exif!.takenAt ?? '(missing)'),
-                      _row(
-                          'createDateTime', _exif!.createDateTime?.toString() ?? '(missing)'),
-                      _row('camera', _exif!.camera ?? '(missing)'),
-                      const Divider(),
-                      Text(
-                        _exif!.lat == null ||
-                                _exif!.lat!.startsWith('NaN')
-                            ? '⚠️ EXIF GPS missing/zero — F2.4 manual picker needed for this photo.'
-                            : '✅ EXIF GPS extracted — feeds F2.5 directly.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ExifSheet extends StatelessWidget {
+  const _ExifSheet({
+    required this.exif,
+    required this.filePath,
+    required this.fileBytes,
+  });
+  final ExifResult exif;
+  final String? filePath;
+  final int? fileBytes;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasGps =
+        exif.lat != null && !exif.lat!.startsWith('NaN');
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      maxChildSize: 0.95,
+      minChildSize: 0.3,
+      expand: false,
+      builder: (context, scrollController) {
+        return SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                hasGps
+                    ? '✅ EXIF GPS extracted — feeds F2.5 directly.'
+                    : '⚠️ No GPS — F2.4 manual picker would be needed.',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const Divider(),
+              _row('File', filePath ?? ''),
+              _row('Bytes', '${fileBytes ?? 0}'),
+              const Divider(),
+              _row('EXIF lat', exif.lat ?? '(missing)'),
+              _row('EXIF lng', exif.lng ?? '(missing)'),
+              _row('MediaStore lat',
+                  exif.mediaLat?.toString() ?? '(missing)'),
+              _row('MediaStore lng',
+                  exif.mediaLng?.toString() ?? '(missing)'),
+              _row('taken_at', exif.takenAt ?? '(missing)'),
+              _row('createDateTime',
+                  exif.createDateTime?.toString() ?? '(missing)'),
+              _row('camera', exif.camera ?? '(missing)'),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -4,6 +4,50 @@
 
 ---
 
+### ADR-009 — F0.4 EXIF spike outcome (Android verified, iOS deferred)
+
+**Status:** Accepted
+
+**Date:** 2026-05-15
+
+**Context:**
+F0.4 was the toolchain-validation spike: prove that, on a real device, the Flutter photo pipeline can pull GPS lat/lng plus the original capture timestamp from a user-picked photo. Two device halves were required by the SRS (iOS HEIC + Full-Access permission; Android JPEG). iOS half is environment-blocked (no macOS host — see ADR-006). The Android half was exercised on a Galaxy Z Fold 5 running Android 16 in iter 8.
+
+**Decision (the spike's empirical findings):**
+
+1. **`image_picker` on Android 13+ is unusable for our pipeline.** The system Photo Picker the plugin invokes returns `GPSLatitude = [0/0, 0/0, 0/0]` and `GPSLongitude = [0/0, 0/0, 0/0]` for every picked photo, including originals known to carry GPS, regardless of `ACCESS_MEDIA_LOCATION` permission. This is an OS-level redaction in the Photo Picker system component, not a plugin bug. See ADR-008 for the swap rationale.
+
+2. **`photo_manager` + `package:exif` works end-to-end.** With permission requested via `PhotoManager.requestPermissionExtend(... mediaLocation: true)`, `AssetEntity.originBytes` returns the un-redacted file content. Galaxy Z Fold 5 capture verified:
+   ```
+   raw GPS lat:     [37, 34, 6787919/1000000]    ← real Rational triple
+   EXIF lat:        37.568552                     ← DMS-to-decimal conversion correct
+   MediaStore lat:  37.56855219972223             ← independent path matches 6 digits
+   EXIF lng:        126.839713
+   MediaStore lng:  126.83971289972222            ← independent path matches 6 digits
+   taken_at:        2026:05:15 23:05:59           ← DateTimeOriginal preserved
+   camera:          samsung Galaxy Z Fold5         ← Image Make/Model preserved
+   ```
+   EXIF and MediaStore agree to 6 decimal places of latitude/longitude — two independent extraction paths converging is strong evidence the toolchain is correctly wired.
+
+3. **Source mix matters.** Non-camera photos in the user's gallery (KakaoTalk-received, downloaded, screenshots, edited) frequently lack GPS entirely (`GPSLatitude` tag absent, not zeroed). Some also lose `Image Make/Model`. The spike screen distinguishes these three states for the F2.x pipeline:
+   - **GPS present** → ✅ feed F2.5 directly
+   - **GPS zeroed (0/0)** → OS-strip case (image_picker only — should never occur on the photo_manager path)
+   - **GPS absent (no tag)** → genuine missing metadata → F2.4 manual location picker required
+
+4. **HEIC support on Android is implicit.** The Fold 5 emits JPEG by default; HEIC EXIF handling is exercised by iOS only and stays deferred with the iOS half.
+
+5. **Order is not default.** photo_manager's default asset ordering is ascending (oldest first). Real-world UX demands newest-first; spike screen sets `FilterOptionGroup(orders: [OrderOption(type: createDate, asc: false)])` and F2.x will inherit.
+
+**Consequences:**
+- F0.4 Android half flips to `[x] done` in `FEATURE_BACKLOG.md`.
+- F0.4 iOS half stays open, blocked on macOS host (parallel to F0.1 iOS half).
+- F2.1 (photo picker UI) inherits this spike's pattern: PhotoManager.requestPermissionExtend → custom thumbnail grid → originBytes → exif parse. No image_picker.
+- F2.2 (EXIF GPS extraction) inherits the `_gps` DMS-to-decimal helper and the three-state classification (present/zeroed/absent).
+- F2.4 (manual location picker fallback) is now confirmed to be a real-traffic feature, not an edge case — most non-camera-original photos in user galleries will need it.
+- Spike screen (`app/lib/main.dart`) stays in place as a dev-time diagnostic; it gets replaced by the real Post screen in F2.1 work.
+
+---
+
 ### ADR-008 — Photo pipeline uses `photo_manager`, not `image_picker`, on Android (GPS scrubbing)
 
 **Status:** Accepted

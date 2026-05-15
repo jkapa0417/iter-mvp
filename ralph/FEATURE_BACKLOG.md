@@ -38,18 +38,19 @@
 - SRS refs: srs/02-data-model.md
 
 ### F0.4 — ⚠️ EXIF SPIKE (iOS + Android devices)
-- [ ] Status: in_progress — Android implementation shipped (photo_manager swap), device GPS extraction verification pending; iOS half deferred to macOS host
+- [x] Status: done for Android (iter 8); iOS half deferred to macOS host (parallel to F0.1)
 - Depends on: F0.1
 - Acceptance:
   - Given a JPEG/HEIC picked from gallery on iOS device with "Full Access" permission → 🚧 deferred (macOS+Xcode required, see ADR-006)
-  - And a JPEG picked from gallery on Android device → 🔧 implementation ready, verification pending
-  - When app extracts EXIF metadata
-  - Then lat/lng/taken_at are successfully extracted and printed to console
-  - And HEIC support is verified on iOS real device (simulator not accepted) → deferred
-  - Result is documented as ADR-001 (will be appended as ADR-009) in DECISIONS.md
+  - And a JPEG picked from gallery on Android device → ✅ Galaxy Z Fold 5 (Android 16): EXIF lat 37.568552, lng 126.839713 extracted; MediaStore latlng matches to 6 decimal places; DateTimeOriginal + Galaxy Z Fold5 Make/Model preserved
+  - When app extracts EXIF metadata → ✅
+  - Then lat/lng/taken_at are successfully extracted and printed to console → ✅ (debugPrint dump captured in monitor output, iter 8)
+  - And HEIC support is verified on iOS real device (simulator not accepted) → 🚧 deferred
+  - Result documented as ADR-009 in DECISIONS.md ✓
 - Implementation notes (iter 8):
-  - Initial attempt used `image_picker` → Android 13+ Photo Picker scrubbed GPS to 0/0 regardless of ACCESS_MEDIA_LOCATION permission. See ADR-008.
-  - Swapped to `photo_manager` which reads MediaStore directly. Spike screen shows last 24 photos as thumbnail strip; tap → parse EXIF + cross-check MediaStore latlng.
+  - Initial attempt with `image_picker` returned `0/0` GPS Rationals regardless of `ACCESS_MEDIA_LOCATION` — Android 13+ Photo Picker redacts at OS level. See ADR-008.
+  - Swap to `photo_manager` + custom 4-col thumbnail grid + bottom-sheet result view fixed it.
+  - Newest-first ordering required explicit `FilterOptionGroup(orders: createDate desc)`.
 - SRS refs: srs/07-risks.md#ios-gps
 
 ### F0.5 — OpenAPI codegen pipeline

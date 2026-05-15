@@ -13,7 +13,7 @@ iOS 14+ uses PHPicker for privacy, which doesn't expose GPS to apps. The workaro
 ### MVP Mitigation
 1. **Gallery-only flow**: On iOS, only pick from existing photos (not camera)
 2. **Permission gate**: Require "Full Access" photo library permission (not "Add Only")
-3. **Manual fallback**: Always provide manual location picker (Mapbox search + tap)
+3. **Manual fallback**: Always provide manual location picker (Nominatim search + tap-to-place)
 4. **UX copy**: Explain "Full Access" requirement in onboarding
 
 ### Verification
@@ -52,16 +52,19 @@ Users may not want exact GPS coordinates public.
 - API returns city-only for public queries
 - Check RLS policies respect visibility setting
 
-## Mapbox Usage Cost
+## Map Tile Source Availability
 
 ### Risk
-Free tier: 50k loads/month. Exceeding = $5/1k loads.
+OpenFreeMap is a relatively young infrastructure (launched 2024). If it goes down or rate-limits us, the world map breaks.
 
 ### Mitigation
-- Monitor active users
-- Cache map tiles locally
-- Alert when approaching limit
-- Consider `flutter_map` + MapLibre for cost savings
+- **Runtime tile-source switch**: env var `MAP_TILE_URL` lets us flip between OpenFreeMap, Stadia Maps, MapTiler without a rebuild.
+- **Backup provider**: Stadia Maps free tier (200k req/month) keeps us covered if OpenFreeMap is unreachable; requires API key but issuance is instant.
+- **Client-side tile cache**: MapLibre's offline pack/cache reduces repeat loads.
+- **Long-term**: self-host OpenMapTiles if usage scales past free tiers (one-time setup cost, then zero marginal cost).
+
+### Why not Mapbox
+ADR-005 (in `ralph/DECISIONS.md`) records the swap from Mapbox to MapLibre + OpenFreeMap. Mapbox's free tier of 50k loads/month was a hard cost ceiling for MVP; MapLibre + open tile sources removes that ceiling entirely.
 
 ## Timezone Boundary Data Size
 

@@ -4,6 +4,31 @@
 
 ---
 
+### ADR-005 — Swap Mapbox for MapLibre GL + OpenFreeMap vector tiles
+
+**Status:** Accepted
+
+**Date:** 2026-05-15
+
+**Context:**
+The original SRS specified Mapbox (`mapbox_maps_flutter`) for the world map. Mapbox's free tier caps at 50k map loads/month, after which it charges $5/1k. For an MVP that wants to grow without billing friction (and with a user who specifically wants to avoid a credit card requirement for the project), this is a hard ceiling. The user explicitly approved exploring open-source alternatives.
+
+**Decision:**
+- **Renderer:** MapLibre GL via the `maplibre_gl` Flutter plugin. MapLibre is a community-maintained fork of Mapbox GL v1 (the last open-source release), so the rendering API is essentially identical to Mapbox GL — vector tiles, GeoJSON sources with clustering, layer filters for country fills, etc. all work the same way.
+- **Tile source:** OpenFreeMap (https://openfreemap.org), an open-source vector tile service launched in 2024. No API key, no rate limits, OpenMapTiles schema. Free forever per their charter.
+- **Backup tile source:** Stadia Maps free tier (200k req/month) configurable via `MAP_TILE_URL` env var if OpenFreeMap is ever unreachable.
+- **Geocoding:** Nominatim (OpenStreetMap) replaces Mapbox Geocoding for the F2.4 search picker. 1 req/s rate limit, requires User-Agent header. For F2.5 country code extraction we use offline point-in-polygon against Natural Earth GeoJSON (~2 MB asset) — no network calls, faster and free.
+
+**Consequences:**
+- **MVP cost ceiling removed.** Zero recurring map costs, ever.
+- **No vendor lock-in.** If OpenFreeMap shuts down (unlikely), the tile-source env var swaps providers without a rebuild. Long-term we can self-host OpenMapTiles.
+- **SRS updates:** `srs/06-geo-logic.md` adds a "Map Rendering Stack" section; `srs/07-risks.md` replaces "Mapbox Usage Cost" with "Map Tile Source Availability"; `CLAUDE.md` line 7 swaps the Maps stack. F2.4 and F3.1 acceptance criteria updated in `ralph/FEATURE_BACKLOG.md`.
+- **`.env.example`:** `MAPBOX_ACCESS_TOKEN` removed; replaced with `MAP_TILE_URL` (default OpenFreeMap) and optional `MAP_TILE_API_KEY` for paid-tier fallbacks.
+- **Slight visual difference:** the default OpenFreeMap style ("Liberty") is less polished than Mapbox's default styles. MapLibre style JSON is hand-editable and we can fork the style file to match brand tokens (`srs/05-ui-design.md`) when we get to F3.x.
+- **Nominatim rate-limit (1 req/s):** F2.4 must debounce the search input. This is good UX anyway, so no real cost.
+
+---
+
 ### ADR-001 — Supabase JWT verification approach
 
 **Status:** Accepted

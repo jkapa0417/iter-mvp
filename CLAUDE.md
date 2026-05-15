@@ -4,7 +4,7 @@
 - **Client**: Flutter (iOS + Android)
 - **Backend**: Rust (Axum + sqlx + utoipa)
 - **Database**: Postgres via Supabase
-- **Maps**: Mapbox (`mapbox_maps_flutter`)
+- **Maps**: MapLibre (`maplibre_gl`) with OpenFreeMap vector tiles (free, no API key)
 
 ## How This Repo Is Driven
 

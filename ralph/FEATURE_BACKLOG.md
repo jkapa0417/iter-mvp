@@ -135,10 +135,10 @@
 - [ ] Status: pending
 - Depends on: F2.2
 - Acceptance:
-  - Mapbox search interface
-  - Tap-to-place pin on map
+  - Nominatim search interface (OpenStreetMap geocoding, 1 req/s, debounced input, User-Agent header set)
+  - Tap-to-place pin on MapLibre map
   - Required when GPS missing
-- SRS refs: srs/01-functional.md#post-screen
+- SRS refs: srs/01-functional.md#post-screen, srs/06-geo-logic.md#map-rendering-stack
 
 ### F2.5 — POST /posts API + DB write
 - [ ] Status: pending
@@ -153,14 +153,15 @@
 
 ## F3 — World Map (Home)
 
-### F3.1 — Mapbox map widget
+### F3.1 — MapLibre map widget
 - [ ] Status: pending
 - Depends on: F1.3
 - Acceptance:
-  - Full-screen map loads
-  - Auth-aware tile loading (private map if not logged in)
+  - Full-screen `maplibre_gl` map loads
+  - Vector tiles served from OpenFreeMap (env var `MAP_TILE_URL` overrideable for Stadia/MapTiler fallback)
+  - No API key required for default tile source
   - Zoom/pan gestures work
-- SRS refs: srs/01-functional.md#home-screen
+- SRS refs: srs/01-functional.md#home-screen, srs/06-geo-logic.md#map-rendering-stack
 
 ### F3.2 — Render user's posts as pins
 - [ ] Status: pending

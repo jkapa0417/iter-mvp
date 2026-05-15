@@ -1,0 +1,18 @@
+# Cargo build configuration for ITER MVP
+#
+# P1: mold linker (3-5x faster incremental linking).
+#     Requires: `sudo apt install mold` on the machine.
+#     If mold isn't installed, comment out the rustflags line below;
+#     cargo check still works without mold, only link-time fails.
+#
+# P4: cap concurrent build jobs to leave RAM headroom on a 20 GB WSL2 box
+#     where other rust projects may compete for memory.
+
+[build]
+jobs = 6
+
+## To enable mold (P1, the biggest dev-loop win), first install it:
+##     sudo apt install mold
+## then uncomment the two lines below.
+#[target.x86_64-unknown-linux-gnu]
+#rustflags = ["-C", "link-arg=-fuse-ld=mold"]

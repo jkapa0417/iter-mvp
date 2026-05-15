@@ -18,3 +18,21 @@ anyhow = "1"
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
+
+# --- Build profiles ---
+# P2: thinner debug info → faster link, smaller target/
+# P3: dependencies built with opt-level=1 → faster test runtime, deps cached anyway
+[profile.dev]
+debug = 1
+incremental = true
+split-debuginfo = "unpacked"
+
+[profile.dev.package."*"]
+opt-level = 1
+
+# P5: release profile for production deploys
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+panic = "abort"

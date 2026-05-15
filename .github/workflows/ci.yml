@@ -1,0 +1,123 @@
+name: ci
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: rust (check + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server -> target
+
+      - name: cargo check
+        working-directory: server
+        run: cargo check --all-targets
+
+      - name: cargo test
+        working-directory: server
+        # F0.3 partial: tests run without DATABASE_URL — health endpoint reports
+        # db:"unconfigured" per ADR-002. CI does NOT exercise sqlx queries here.
+        run: cargo test --all-targets
+
+  flutter:
+    name: flutter (analyze + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: flutter analyze
+        working-directory: app
+        run: flutter analyze
+
+      - name: flutter test
+        working-directory: app
+        run: flutter test
+
+  dart-openapi:
+    name: dart-openapi (generated client)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install dart
+        uses: dart-lang/setup-dart@v1
+
+      - name: dart pub get
+        working-directory: packages/openapi
+        run: dart pub get
+
+      - name: dart analyze
+        working-directory: packages/openapi
+        # Upstream openapi-generator template emits one unused_import warning
+        # in lib/src/api/system_api.dart (not our code). Don't fail CI on
+        # warnings; errors still abort the build.
+        run: dart analyze --no-fatal-warnings
+
+      - name: dart test
+        working-directory: packages/openapi
+        run: dart test
+
+  migrations:
+    name: sqlx migrate (real postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: iter
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/iter
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: sqlx-cli
+
+      - name: install sqlx-cli
+        run: cargo install sqlx-cli --version ^0.8 --no-default-features --features postgres,rustls
+
+      # Acceptance text says "sqlx migrate run --dry-run" but sqlx-cli has no
+      # --dry-run flag; the equivalent real check is "do the migrations apply
+      # cleanly against a real Postgres instance?". We do that here against a
+      # service container, which is strictly stronger than a syntactic dry run.
+      - name: sqlx migrate run
+        run: sqlx migrate run --source infra/supabase/migrations

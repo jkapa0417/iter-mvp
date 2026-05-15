@@ -21,21 +21,6 @@ What specific decision or intervention is required?
 
 ---
 
-### F0.1 — Flutter app scaffold
-
-**Failed at iteration:** 1
-
-**Reason:**
-Flutter CLI not installed in system environment. The Ralph Loop cannot install Flutter SDK automatically.
-
-**Last error:**
-`flutter: command not found`
-
-**Human review needed:**
-Install Flutter SDK on this machine before re-attempting F0.1. For WSL+Windows development, follow Flutter's official installation guide for Windows and ensure WSL2 can access the Flutter installation.
-
----
-
 ### F0.3 — Supabase + env vars setup (partial)
 
 **Failed at iteration:** 3

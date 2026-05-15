@@ -1,0 +1,78 @@
+# Flutter
+app/build/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.dart_tool/
+app/.packages
+app/.pub-cache/
+app/.pub/
+app/pubspec.lock
+
+# Rust
+server/target/
+server/Cargo.lock
+server/.sqlx/
+server/*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Logs
+*.log
+server/logs/
+
+# Supabase
+infra/supabase/.branches/
+infra/supabase/.temp/
+
+# Generated
+openapi.json
+app/lib/api/
+
+# Test coverage
+coverage/
+.lcov/
+
+# Claude Code
+.claude/cache/
+.claude/sessions/
+
+# Ralph Loop (keep state, but ignore temp)
+ralph/.tmp/
+
+# Build artifacts
+*.apk
+*.app
+*.ipa
+*.ipa.dSYM.zip
+*.dSYM/
+
+# Docker
+.dockerignore
+
+# Misc
+*.bak
+*.tmp
+*.swp
+node_modules/

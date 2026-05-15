@@ -50,7 +50,7 @@
 - SRS refs: srs/07-risks.md#ios-gps
 
 ### F0.5 — OpenAPI codegen pipeline
-- [ ] Status: pending
+- [ ] Status: blocked (partial — Rust /emit-openapi + script ready iter 4; Dart client gen waits on F0.1)
 - Depends on: F0.2
 - Acceptance:
   - `scripts/codegen.sh` runs end-to-end

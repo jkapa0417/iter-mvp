@@ -1,13 +1,22 @@
 use std::env;
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
+use utoipa::OpenApi;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Check --emit-openapi BEFORE tracing init so stdout stays clean.
+    if env::args().any(|a| a == "--emit-openapi") {
+        let json = iter_server::ApiDoc::openapi().to_pretty_json()?;
+        println!("{json}");
+        return Ok(());
+    }
+
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
+        .with_writer(std::io::stderr)
         .init();
 
     let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());

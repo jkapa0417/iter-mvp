@@ -48,6 +48,45 @@ Option B. In iteration 3:
 
 ---
 
+### ADR-003 — F0.5 chose npx openapi-generator-cli over docker
+
+**Status:** Accepted
+
+**Date:** 2026-05-15
+
+**Context:**
+F0.5's `scripts/codegen.sh` originally invoked `docker run openapitools/openapi-generator-cli`. Docker is not available in this WSL2 environment. Three alternatives: (a) install docker, (b) install openapi-generator-cli natively (Java dep), (c) use the official npm wrapper via npx.
+
+**Decision:**
+Use `npx --yes @openapitools/openapi-generator-cli generate ...`. Node 22 + npx are already present. The npm wrapper downloads the generator JAR on first use (~50 MB) and caches it.
+
+**Consequences:**
+- No docker dependency. Works in any environment with cargo + node.
+- First run downloads JAR; subsequent runs are fast.
+- Identical generator semantics to the docker image (same upstream binary).
+- Script still gates the Dart-client step on `command -v npx` for portability.
+
+---
+
+### ADR-004 — F0.5 hand-rolled `--emit-openapi` flag, no clap dependency
+
+**Status:** Accepted
+
+**Date:** 2026-05-15
+
+**Context:**
+The `--emit-openapi` mode needs to short-circuit normal server startup, print the OpenAPI JSON to stdout, and exit before tracing pollutes the output. Two implementation choices: pull in `clap` for proper arg parsing, or hand-roll a single-flag check.
+
+**Decision:**
+Hand-rolled — `if std::env::args().any(|a| a == "--emit-openapi") { ... }` at the top of `main.rs`. tracing-subscriber is also configured with `.with_writer(std::io::stderr)` as defense in depth.
+
+**Consequences:**
+- One less dependency, one less compile-time hit.
+- If we ever need >2 CLI flags, revisit and switch to clap.
+- Tracing → stderr is now a project invariant; never log to stdout from this binary.
+
+---
+
 ## Template
 
 ### ADR-XXX — [Title]

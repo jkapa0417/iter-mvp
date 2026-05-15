@@ -39,13 +39,21 @@ pub fn app(state: AppState) -> Router {
         .with_state(state)
 }
 
-#[derive(serde::Serialize)]
-struct HealthResponse {
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct HealthResponse {
     status: &'static str,
     db: &'static str,
 }
 
-async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
+#[utoipa::path(
+    get,
+    path = "/health",
+    responses(
+        (status = 200, description = "Service health + DB readiness", body = HealthResponse)
+    ),
+    tag = "system"
+)]
+pub async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
     let db_status: &'static str = match &state.db {
         None => "unconfigured",
         Some(pool) => {
@@ -65,3 +73,18 @@ async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
         db: db_status,
     })
 }
+
+#[derive(utoipa::OpenApi)]
+#[openapi(
+    paths(health),
+    components(schemas(HealthResponse)),
+    info(
+        title = "ITER API",
+        version = "0.1.0",
+        description = "ITER MVP backend API. Source: srs/03-api.md."
+    ),
+    tags(
+        (name = "system", description = "Health and operational endpoints")
+    )
+)]
+pub struct ApiDoc;

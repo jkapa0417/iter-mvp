@@ -1,9 +1,5 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// F0.4 spike screen smoke test — renders the scaffold without crashing.
+// Full EXIF behavior is verified manually on real devices, not in widget tests.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,20 +7,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:iter/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('EXIF spike screen renders', (WidgetTester tester) async {
+    await tester.pumpWidget(const ExifSpikeApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('F0.4 — EXIF spike (photo_manager)'), findsOneWidget);
+    expect(find.text('Load recent photos'), findsOneWidget);
+    expect(find.byIcon(Icons.photo_library), findsOneWidget);
   });
 }

@@ -35,6 +35,12 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # F0.4 EXIF spike — direct asset library access (photo_manager) so we get
+  # un-redacted GPS. image_picker on Android 13+ goes through the OS Photo
+  # Picker which always scrubs location, regardless of permissions.
+  photo_manager: ^3.6.0
+  exif: ^3.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -16,6 +16,27 @@ ITER is a **map-first travel social app** where users upload travel photos, GPS 
 - **Maps**: Mapbox (`mapbox_maps_flutter`)
 - **Auth**: Supabase Auth (Apple + Google + email)
 
+## F0.3 — Human Action Required (Supabase Setup)
+
+The Ralph Loop pre-staged the schema and sqlx wiring in iteration 3. To complete F0.3, a human needs to:
+
+1. Create a Supabase project at https://supabase.com (free tier is fine for MVP dev).
+2. Copy `.env.example` to `.env` at repo root.
+3. Fill these keys in `.env` from Supabase Project Settings → API:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+4. Fill `DATABASE_URL` from Project Settings → Database → Connection String → URI (use the "transaction" mode for sqlx-cli compatibility).
+5. Apply the migration:
+   ```bash
+   cd server
+   sqlx migrate run --source ../infra/supabase/migrations --dry-run   # preview
+   sqlx migrate run --source ../infra/supabase/migrations             # apply
+   ```
+6. Restart the server (`cd server && cargo run`) and verify `curl localhost:8080/health` returns `"db":"connected"`.
+
+The initial migration is at `infra/supabase/migrations/0001_init.sql` (4 core tables: users, trips, posts, countries_visited). RLS is enabled but policies are stub comments — those land in F1.x once Supabase Auth is wired.
+
 ## Quick Start
 
 ### Prerequisites

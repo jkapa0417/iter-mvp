@@ -5,7 +5,8 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn health_returns_200_ok() {
-    let app = iter_server::app();
+    let state = iter_server::AppState { db: None };
+    let app = iter_server::app(state);
 
     let request = Request::builder()
         .uri("/health")
@@ -17,5 +18,7 @@ async fn health_returns_200_ok() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    assert_eq!(&body[..], b"ok");
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(json["status"], "ok");
+    assert_eq!(json["db"], "unconfigured");
 }

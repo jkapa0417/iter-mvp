@@ -1,0 +1,11 @@
+# sqlx-cli configuration for iter-server
+#
+# NOTE: sqlx 0.8 changed the toml schema; to avoid ambiguity we pass
+# --source explicitly on the command line instead of relying on this file.
+# See the "F0.3 — Human Action Required" section in README.md for the
+# exact commands:
+#
+#   sqlx migrate run --source ../infra/supabase/migrations
+#
+# This file is kept as a marker so future contributors know sqlx-cli is
+# the intended migration driver for this project.

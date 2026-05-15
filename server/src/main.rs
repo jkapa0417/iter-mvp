@@ -12,9 +12,13 @@ async fn main() -> anyhow::Result<()> {
 
     let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let addr = format!("0.0.0.0:{port}");
+
+    let state = iter_server::AppState {
+        db: iter_server::init_db_pool().await,
+    };
+
     let listener = TcpListener::bind(&addr).await?;
     tracing::info!("iter-server listening on {addr}");
-
-    axum::serve(listener, iter_server::app()).await?;
+    axum::serve(listener, iter_server::app(state)).await?;
     Ok(())
 }

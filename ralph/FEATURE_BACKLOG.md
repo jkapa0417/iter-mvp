@@ -26,7 +26,7 @@
 - SRS refs: srs/03-api.md
 
 ### F0.3 — Supabase + env vars setup
-- [ ] Status: pending
+- [ ] Status: blocked (partial — schema + sqlx wiring done iter 3; awaiting Supabase credentials)
 - Depends on: F0.2
 - Acceptance:
   - Supabase project created (env vars configured, not committed)

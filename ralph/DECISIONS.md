@@ -4,6 +4,39 @@
 
 ---
 
+### ADR-011 — Globe package swap: flutter_earth_globe → flutter_globe_3d (rotation quality)
+
+**Status:** Accepted
+
+**Date:** 2026-05-16
+
+**Context:**
+ADR-010 selected `flutter_earth_globe` v2.2.1 for the 3D globe home view (Path A). On-device validation on Galaxy Z Fold 5 (Android 16, iter 12) surfaced unfixable issues:
+
+1. **Rotation axis coupling** — `rotating_globe.dart:1771-1776` updates both `rotationX` and `rotationY` from `offset.dy` (vertical drag), which combines the axes once the globe has rotated some. Drag direction becomes inconsistent as the user rotates around — sometimes left-swipe rotates right, sometimes vertical input wraps onto X. UX-breaking for a globe-first app.
+2. **Horizontal pan can't be inverted independently** — `panSensitivity` flips both X and Y. No separate `invertHorizontalPan` flag.
+3. **Image flinch on drag** — MemoryImage path re-decodes per frame during gestures, causing the texture to flicker/snap to wrong positions.
+
+Forking the package to fix the rotation math is non-trivial maintenance burden. Surveyed pub.dev for alternatives; **`flutter_globe_3d` v2.2.5** (different author, GPU fragment-shader-based rendering, "smooth gestures" advertised) was the only credible candidate.
+
+**Decision:**
+Swap to `flutter_globe_3d`. Validated on Fold 5:
+- Rotation is clean and consistent across the full sphere (no axis coupling).
+- Texture loads via standard `ImageProvider`; no flinch with `MemoryImage`.
+- Built-in `EarthLightMode.fixedCoordinates` lets us pin the light to the camera focus → eliminates terminator shading via a controller listener (`setFixedLightCoordinates(currentLat, currentLng)` on every offset change).
+- Square canvas locked to `min(width, height)` with `ValueKey(canvasSide)` recreation + zoom reset on viewport change handles foldable fold↔unfold cleanly.
+
+**Consequences:**
+- ADR-010 Path A still holds (two-screen globe → 2D country map). Only the globe-rendering package changed.
+- `flutter_earth_globe` removed from `app/pubspec.yaml`.
+- `app/lib/screens/globe_screen.dart` rewritten around `Earth3D` / `EarthController` / `EarthNode` API.
+- Limitations carried into F3.x:
+  - The package's pin tap propagates to globe gesture (tap rotates slightly). F3.3 will wrap pin children in an opaque hit-test region before navigating.
+  - Auto-rotate resume timer is hardcoded ~1s in the package — we override with a `Listener` + 8s `Timer`.
+  - `fixedCoordinates` light mode mathematics require manual sync to camera. Done via a controller listener that converts `offset → (lat, lng)` using the package's inverse projection formula (mirrors `setCameraFocus`).
+
+---
+
 ### ADR-010 — Home screen: 3D globe + 2D country drill-down (two-screen architecture)
 
 **Status:** Accepted

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/globe_screen.dart';
 import 'screens/login_screen.dart';
 
 Future<void> main() async {
@@ -53,7 +53,7 @@ class _AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = Supabase.instance.client.auth.currentSession;
         if (session == null) return const LoginScreen();
-        return const HomeScreen();
+        return const GlobeScreen();
       },
     );
   }

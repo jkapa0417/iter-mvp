@@ -187,14 +187,22 @@
 
 > ⚠️ F3.x re-mapped in ADR-010 — home pivot to 3D globe + 2D country drill-down. Original "single MapLibre 2D map" plan superseded. SRS update deferred to F3 implementation.
 
-### F3.1 — 3D globe home widget (`flutter_earth_globe`)
-- [ ] Status: pending
+### F3.1 — 3D globe home widget (`flutter_globe_3d`)
+- [x] Status: done (iter 12, concept-validated on Galaxy Z Fold 5)
 - Depends on: F1.3
 - Acceptance:
-  - Full-screen 3D globe loads on home tab
-  - Custom equirectangular PNG texture (modern flat-color palette, no terrain/clouds/labels)
-  - User can rotate, zoom, tap a country
-  - Tapping country navigates to F3.3 country detail screen
+  - Full-screen 3D globe loads on home tab ✓
+  - Custom equirectangular PNG texture (modern flat-color palette, no terrain/clouds/labels) ✓ — placeholder oval-blob continents painted via Flutter Canvas (F3.2 swaps to Natural Earth polygons)
+  - User can rotate, zoom, tap a pin ✓
+  - Tapping pin → "country drill-down coming in F3.3" snackbar (F3.3 wires the real Hero/fade to MapLibre)
+- Package swap: ADR-010 originally selected `flutter_earth_globe` but on-device validation surfaced unfixable rotation-axis bugs (drag direction inconsistent, horizontal X/Y not separately invertible, flinching on drag). Replaced with **`flutter_globe_3d`** v2.2.5 (GPU fragment shader, smoother gestures) — confirmed clean rotation on Fold 5. ADR-010 amended in DECISIONS.md.
+- Implementation notes (iter 12):
+  - Procedural texture: dark navy ocean + mid-tan continent ovals, generated at app start via Canvas → PNG → MemoryImage (no asset bundle needed for spike).
+  - Light follows camera: controller listener inverts `offset → (lat, lng)` and pushes `setFixedLightCoordinates` every frame change, so the lit hemisphere always faces the user — eliminates the dark terminator stripe that `realTime` / `followCamera` modes leave.
+  - Device-relative size: square canvas locked to `min(width, height)` so the globe stays a consistent visual proportion across folded portrait, unfolded near-square, tablets, and landscape.
+  - Viewport-change reset: when canvas dimensions change (fold/unfold), the controller's zoom + camera focus are reset post-frame and the Earth3D widget is recreated via `ValueKey(canvasSide)`.
+  - 8s auto-rotate pause on touch (default 1s was too eager — user couldn't browse).
+- Known limitation: the package's pin tap-down propagates to the underlying gesture handler so a tap also rotates the globe slightly. F3.3 will wrap pins in a HitTestBehavior wall before drill-down.
 - SRS refs: srs/05-ui-design.md (home), srs/06-geo-logic.md (rendering stack)
 
 ### F3.2 — Render visited countries onto globe texture

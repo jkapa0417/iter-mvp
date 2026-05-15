@@ -50,13 +50,13 @@
 - SRS refs: srs/07-risks.md#ios-gps
 
 ### F0.5 — OpenAPI codegen pipeline
-- [ ] Status: partial (Rust emission iter 4; Dart client gen now unblocked since F0.1 scaffolded app/ in iter 5 — re-run scripts/codegen.sh to complete)
+- [x] Status: done (iter 6)
 - Depends on: F0.2
 - Acceptance:
-  - `scripts/codegen.sh` runs end-to-end
-  - Rust server emits OpenAPI spec
-  - openapi-generator creates Dart client in `app/lib/api/`
-  - Generated client builds without errors
+  - `scripts/codegen.sh` runs end-to-end ✓
+  - Rust server emits OpenAPI spec ✓
+  - openapi-generator creates Dart client in `packages/openapi/` (relocated from `app/lib/api/` — see ADR-007) ✓
+  - Generated client builds without errors (`dart analyze` clean except 1 upstream-template unused_import; `dart test` 3/3 green; `flutter analyze` from app/ clean; `flutter test` from app/ green) ✓
 - SRS refs: srs/03-api.md
 
 ### F0.6 — CI skeleton

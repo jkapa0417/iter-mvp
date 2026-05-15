@@ -1,14 +1,15 @@
 # Ralph Loop State
 
 ## Current
-- iteration: 5
-- last_completed: F0.1 (partial — Android verified; iOS scaffolded, deferred to macOS host)
+- iteration: 6
+- last_completed: F0.5 (codegen pipeline end-to-end; Dart client at packages/openapi/)
 - in_progress: none
-- last_run_at: 2026-05-15T21:30:00Z
+- last_run_at: 2026-05-15T22:30:00Z
 
 ## Recent (last 20)
 *This section will be trimmed to 20 entries by state-updater.*
 
+- F0.5 ✅ 2026-05-15 — DONE: `scripts/codegen.sh` runs end-to-end (cargo→openapi.json→openapi-generator-cli@7.22.0→dart format→dart pub get→build_runner). First run failed at build_runner because the dart-dio generator writes a standalone Dart package with its own pubspec, and (a) it was being placed under app/lib/ where Flutter recursively analyzes everything, (b) the script ran `flutter pub run build_runner` from app/ instead of from the generated package. Fixed by relocating to `packages/openapi/` (sibling to app/, server/) and running `dart run build_runner` from inside the package. flutter analyze clean from app/, flutter test green, dart test 3/3 green in openapi. See ADR-007. F0.5 removed from BLOCKERS.
 - F0.1 ⚠️ 2026-05-15 — PARTIAL: `flutter create app/` shipped (iOS+Android targets). Android verified end-to-end (analyze, test, debug APK 145 MB). iOS scaffolded but unbuildable in WSL2 (no Xcode). T5 first attempt failed on missing openjdk-21-jdk → user installed → Gradle daemon caching tripped retry → `./gradlew --stop` + JAVA_HOME export cleared. See ADR-006.
 - F0.1 🔓 2026-05-15 — UNBLOCKED: Flutter 3.41.9 SDK installed at ~/flutter, Android cmdline-tools at ~/Android (SDK 36 + build-tools 28.0.3 + platform-tools), JDK 21 present. `flutter doctor` green for Flutter/Android/device/network. F0.1 removed from BLOCKERS — next loop iteration will scaffold the app.
 - ADR-005 ✅ 2026-05-15 — Tech-stack pivot: Mapbox → MapLibre GL + OpenFreeMap (free, no API key). Updated CLAUDE.md, srs/06, srs/07, FEATURE_BACKLOG F2.4/F3.1, .env.example. No active code yet (F3 not started).

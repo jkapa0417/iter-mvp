@@ -43,24 +43,6 @@ Execute the 6-step handoff in `README.md` (create Supabase project → fill `.en
 
 ---
 
-### F0.5 — OpenAPI codegen pipeline (partial)
-
-**Failed at iteration:** 4
-
-**Reason:**
-Two of four acceptance criteria depend on Flutter SDK + an `app/` directory, neither of which exist (F0.1 in BLOCKERS). Specifically: "openapi-generator creates Dart client in `app/lib/api/`" and "Generated client builds without errors" both require Flutter. The Rust side (server emits spec, `scripts/codegen.sh` runs end-to-end on available toolchain) is complete and tested.
-
-**Last error:**
-No error — `scripts/codegen.sh` exits 0 with `[skip] app/ not present (F0.1 blocked)` for the Dart steps. Behavior is intentional graceful degradation.
-
-**Human review needed:**
-Unblocks automatically once F0.1 lands. Once Flutter SDK is installed and `app/` is scaffolded, re-run `bash scripts/codegen.sh` to generate the Dart client into `app/lib/api/` via `npx @openapitools/openapi-generator-cli`. No further manual action expected.
-
-**What's already in place (delivered iteration 4):**
-- `server/src/lib.rs` — `#[utoipa::path]` on /health, `pub struct ApiDoc` with `#[derive(OpenApi)]`
-- `server/src/main.rs` — `--emit-openapi` CLI flag (no clap dep; tracing → stderr)
-- `scripts/codegen.sh` — docker-free, npx-based, memory-gated, graceful skips
-- `server/tests/openapi_emission_test.rs` — integration test asserting 5 OpenAPI contract points
-- ADRs in `ralph/DECISIONS.md` document the partial scope
+<!-- F0.5 resolved in iter 6 — moved to FEATURE_BACKLOG as [x] done. See ADR-007. -->
 
 ---

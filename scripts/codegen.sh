@@ -13,7 +13,11 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 SERVER_DIR="$PROJECT_ROOT/server"
 APP_DIR="$PROJECT_ROOT/app"
 OPENAPI_JSON="$PROJECT_ROOT/openapi.json"
-DART_OUTPUT="$APP_DIR/lib/api"
+# Generated Dart client lives at project root (sibling to app/, server/, infra/).
+# Not under app/lib/ or app/packages/ — Flutter recursively analyzes everything
+# under the app/ tree and would otherwise flag the generated package's warnings.
+# See ADR-007.
+DART_OUTPUT="$PROJECT_ROOT/packages/openapi"
 
 # --- memory gate ---
 MEM_FREE_MB=$(free -m | awk '/^Mem:/ {print $7}')
@@ -58,7 +62,7 @@ fi
 # --- Step 3: Dart formatting (conditional) ---
 if [ "${RAN_DART_CLIENT:-0}" -eq 1 ] && command -v dart >/dev/null 2>&1; then
   echo "✨ Formatting generated Dart code..."
-  ( cd "$APP_DIR" && dart format lib/api/ )
+  ( cd "$DART_OUTPUT" && dart format . )
   RAN_DART_FORMAT=1
 else
   if [ "${RAN_DART_CLIENT:-0}" -eq 1 ]; then
@@ -67,14 +71,19 @@ else
   RAN_DART_FORMAT=0
 fi
 
-# --- Step 4: build_runner (conditional) ---
-if [ "${RAN_DART_CLIENT:-0}" -eq 1 ] && command -v flutter >/dev/null 2>&1; then
+# --- Step 4: build_runner (run from inside the generated package, not from app/) ---
+# The generated package has its own pubspec.yaml with build_runner +
+# built_value_generator as dev_dependencies. We pub-get + run build_runner from
+# THAT directory using `dart`, not `flutter`, since openapi is a pure Dart pkg.
+if [ "${RAN_DART_CLIENT:-0}" -eq 1 ] && command -v dart >/dev/null 2>&1; then
+  echo "📦 dart pub get (in $DART_OUTPUT)..."
+  ( cd "$DART_OUTPUT" && dart pub get )
   echo "🔨 Running build_runner..."
-  ( cd "$APP_DIR" && flutter pub run build_runner build --delete-conflicting-outputs )
+  ( cd "$DART_OUTPUT" && dart run build_runner build --delete-conflicting-outputs )
   RAN_BUILD_RUNNER=1
 else
   if [ "${RAN_DART_CLIENT:-0}" -eq 1 ]; then
-    echo "[skip] flutter not installed — build_runner skipped"
+    echo "[skip] dart not installed — build_runner skipped"
   fi
   RAN_BUILD_RUNNER=0
 fi

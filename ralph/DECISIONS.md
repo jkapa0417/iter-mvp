@@ -4,6 +4,31 @@
 
 ---
 
+### ADR-007 — Generated Dart client lives at project root `packages/openapi/`, not `app/lib/api/`
+
+**Status:** Accepted
+
+**Date:** 2026-05-15
+
+**Context:**
+F0.5 acceptance originally said "openapi-generator creates Dart client in `app/lib/api/`". When iter 6 re-ran `scripts/codegen.sh` with `app/` finally present, two problems surfaced:
+1. **The dart-dio generator writes a *standalone Dart package*** — its own `pubspec.yaml`, `lib/`, `test/`, deps (`dio`, `built_value`, `built_collection`, dev deps `build_runner`, `built_value_generator`), `analysis_options.yaml`. Dropping that inside `app/lib/api/` creates a nested package, which `flutter analyze` recursively walks and flags the generated code's warnings ("Analyzing app… 1 issue found … packages/openapi/lib/src/api/system_api.dart unused_import"). The Flutter app's `lib/` is the wrong home for an autonomous Dart package.
+2. **The original script's `flutter pub run build_runner build` ran from `$APP_DIR`** — but build_runner + built_value_generator are dev_deps of the *generated* package, not the Flutter app. So build_runner couldn't find itself. ("Could not find package 'build_runner'. Did you forget to add a dependency?")
+
+**Decision:**
+- **Output location:** `packages/openapi/` at the project root, sibling to `app/`, `server/`, `infra/`. Matches the existing top-level layout (one directory per logical unit).
+- **`scripts/codegen.sh`:** `DART_OUTPUT="$PROJECT_ROOT/packages/openapi"`; build_runner step runs `dart pub get && dart run build_runner build --delete-conflicting-outputs` from inside that directory using `dart`, not `flutter` (the openapi package is a pure Dart library, not a Flutter package).
+- **Acceptance language updated** in `ralph/FEATURE_BACKLOG.md` to read "in `packages/openapi/`" with this ADR cross-referenced.
+
+**Consequences:**
+- `flutter analyze` from `app/` is now clean (no recursive descent into a non-dependency package).
+- When F1.x needs to call the API, `app/pubspec.yaml` adds `openapi: { path: ../packages/openapi }` (standard Flutter monorepo pattern). Not added in F0.5 to keep this iteration's blast radius minimal — no app code consumes the client yet.
+- `openapitools.json` (version-pinning to openapi-generator-cli 7.22.0) is now at the project root and is committed; codegen reproduces deterministically.
+- The generator emits one harmless `unused_import` warning in `system_api.dart` (upstream template, not our code). Suppressing it would mean editing generated code; left as-is.
+- The `--delete-conflicting-outputs` flag is silently ignored in build_runner ≥2.x. Kept in the script for backward compatibility; harmless warning at runtime.
+
+---
+
 ### ADR-006 — F0.1 ships partial: Android verified, iOS deferred to macOS host
 
 **Status:** Accepted

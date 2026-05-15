@@ -46,6 +46,19 @@ jobs:
           channel: stable
           cache: true
 
+      # app/.env is gitignored (carries SUPABASE_URL + anon key for dev). CI
+      # builds don't have those, but pubspec.yaml declares .env as an asset
+      # and `flutter analyze` fails on `asset_does_not_exist`. Materialize a
+      # stub so analyze/test pass; nothing here is exercised at compile time.
+      - name: bootstrap stub .env
+        working-directory: app
+        run: |
+          cat > .env <<'EOF'
+          SUPABASE_URL=https://ci.invalid.local
+          SUPABASE_ANON_KEY=ci-stub-anon-key
+          MAP_TILE_URL=https://tiles.openfreemap.org/styles/liberty
+          EOF
+
       - name: flutter pub get
         working-directory: app
         run: flutter pub get

@@ -16,7 +16,7 @@
 - SRS refs: srs/00-overview.md
 
 ### F0.2 — Rust server scaffold
-- [ ] Status: pending
+- [x] Status: done
 - Depends on: none
 - Acceptance:
   - `cargo new server/ --bin`

@@ -10,9 +10,11 @@ app/pubspec.lock
 
 # Rust
 server/target/
-server/Cargo.lock
 server/.sqlx/
 server/*.db
+
+# Claude Code scheduled task lock (runtime only)
+.claude/scheduled_tasks.lock
 
 # Python
 __pycache__/

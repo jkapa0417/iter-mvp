@@ -15,17 +15,20 @@ import 'package:openapi/src/date_serializer.dart';
 import 'package:openapi/src/model/date.dart';
 
 import 'package:openapi/src/model/health_response.dart';
+import 'package:openapi/src/model/me_response.dart';
 
 part 'serializers.g.dart';
 
-@SerializersFor([HealthResponse])
-Serializers serializers =
-    (_$serializers.toBuilder()
-          ..add(const OneOfSerializer())
-          ..add(const AnyOfSerializer())
-          ..add(const DateSerializer())
-          ..add(Iso8601DateTimeSerializer()))
-        .build();
+@SerializersFor([
+  HealthResponse,
+  MeResponse,
+])
+Serializers serializers = (_$serializers.toBuilder()
+      ..add(const OneOfSerializer())
+      ..add(const AnyOfSerializer())
+      ..add(const DateSerializer())
+      ..add(Iso8601DateTimeSerializer()))
+    .build();
 
 Serializers standardSerializers =
     (serializers.toBuilder()..addPlugin(StandardJsonPlugin())).build();

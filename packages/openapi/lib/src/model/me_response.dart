@@ -6,56 +6,56 @@
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
-part 'health_response.g.dart';
+part 'me_response.g.dart';
 
-/// HealthResponse
+/// MeResponse
 ///
 /// Properties:
-/// * [db]
-/// * [status]
+/// * [email] - User's email, if present on the token.
+/// * [userId] - Supabase Auth user UUID (the JWT `sub` claim).
 @BuiltValue()
-abstract class HealthResponse
-    implements Built<HealthResponse, HealthResponseBuilder> {
-  @BuiltValueField(wireName: r'db')
-  String get db;
+abstract class MeResponse implements Built<MeResponse, MeResponseBuilder> {
+  /// User's email, if present on the token.
+  @BuiltValueField(wireName: r'email')
+  String? get email;
 
-  @BuiltValueField(wireName: r'status')
-  String get status;
+  /// Supabase Auth user UUID (the JWT `sub` claim).
+  @BuiltValueField(wireName: r'user_id')
+  String get userId;
 
-  HealthResponse._();
+  MeResponse._();
 
-  factory HealthResponse([void updates(HealthResponseBuilder b)]) =
-      _$HealthResponse;
+  factory MeResponse([void updates(MeResponseBuilder b)]) = _$MeResponse;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(HealthResponseBuilder b) => b;
+  static void _defaults(MeResponseBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<HealthResponse> get serializer =>
-      _$HealthResponseSerializer();
+  static Serializer<MeResponse> get serializer => _$MeResponseSerializer();
 }
 
-class _$HealthResponseSerializer
-    implements PrimitiveSerializer<HealthResponse> {
+class _$MeResponseSerializer implements PrimitiveSerializer<MeResponse> {
   @override
-  final Iterable<Type> types = const [HealthResponse, _$HealthResponse];
+  final Iterable<Type> types = const [MeResponse, _$MeResponse];
 
   @override
-  final String wireName = r'HealthResponse';
+  final String wireName = r'MeResponse';
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    HealthResponse object, {
+    MeResponse object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'db';
+    if (object.email != null) {
+      yield r'email';
+      yield serializers.serialize(
+        object.email,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    yield r'user_id';
     yield serializers.serialize(
-      object.db,
-      specifiedType: const FullType(String),
-    );
-    yield r'status';
-    yield serializers.serialize(
-      object.status,
+      object.userId,
       specifiedType: const FullType(String),
     );
   }
@@ -63,7 +63,7 @@ class _$HealthResponseSerializer
   @override
   Object serialize(
     Serializers serializers,
-    HealthResponse object, {
+    MeResponse object, {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object,
@@ -76,26 +76,27 @@ class _$HealthResponseSerializer
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
     required List<Object?> serializedList,
-    required HealthResponseBuilder result,
+    required MeResponseBuilder result,
     required List<Object?> unhandled,
   }) {
     for (var i = 0; i < serializedList.length; i += 2) {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'db':
+        case r'email':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.db = valueDes;
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.email = valueDes;
           break;
-        case r'status':
+        case r'user_id':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(String),
           ) as String;
-          result.status = valueDes;
+          result.userId = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -106,12 +107,12 @@ class _$HealthResponseSerializer
   }
 
   @override
-  HealthResponse deserialize(
+  MeResponse deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = HealthResponseBuilder();
+    final result = MeResponseBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(

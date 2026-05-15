@@ -24,6 +24,7 @@ async fn main() -> anyhow::Result<()> {
 
     let state = iter_server::AppState {
         db: iter_server::init_db_pool().await,
+        jwks: iter_server::init_jwks_cache(),
     };
 
     let listener = TcpListener::bind(&addr).await?;

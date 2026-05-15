@@ -1,11 +1,17 @@
-use axum::{extract::State, routing::get, Json, Router};
+use axum::{
+    extract::State, middleware, routing::get, Extension, Json, Router,
+};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::time::Duration;
+use supabase_jwt::JwksCache;
+
+pub mod auth;
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: Option<PgPool>,
+    pub jwks: JwksCache,
 }
 
 pub async fn init_db_pool() -> Option<PgPool> {
@@ -55,9 +61,35 @@ pub async fn init_db_pool() -> Option<PgPool> {
     Some(pool)
 }
 
+/// Build the JwksCache from `SUPABASE_URL`. Returns a non-functional cache
+/// pointing at `https://invalid.local/jwks` if the env var is missing — that
+/// keeps the server bootable for local tests of the public routes without
+/// having to set Supabase env. Real verification still requires SUPABASE_URL.
+pub fn init_jwks_cache() -> JwksCache {
+    let supabase_url = std::env::var("SUPABASE_URL").unwrap_or_else(|_| {
+        tracing::warn!(
+            "SUPABASE_URL not set — auth middleware will reject all tokens"
+        );
+        "https://invalid.local".to_string()
+    });
+    let jwks_url = auth::jwks_url_from_supabase_url(&supabase_url);
+    tracing::info!("JWKS endpoint: {jwks_url}");
+    JwksCache::new(&jwks_url)
+}
+
 pub fn app(state: AppState) -> Router {
+    // Routes that require a valid Supabase JWT. F1.3 will replace /me's body
+    // with a real user-profile lookup against the users table.
+    let protected = Router::new()
+        .route("/me", get(me_handler))
+        .layer(middleware::from_fn_with_state(
+            state.jwks.clone(),
+            auth::require_auth,
+        ));
+
     Router::new()
         .route("/health", get(health))
+        .merge(protected)
         .with_state(state)
 }
 
@@ -100,17 +132,45 @@ pub async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
     })
 }
 
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct MeResponse {
+    /// Supabase Auth user UUID (the JWT `sub` claim).
+    pub user_id: String,
+    /// User's email, if present on the token.
+    pub email: Option<String>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/me",
+    responses(
+        (status = 200, description = "The authenticated caller's identity", body = MeResponse),
+        (status = 401, description = "Missing or invalid Bearer token")
+    ),
+    security(("bearerAuth" = [])),
+    tag = "auth"
+)]
+pub async fn me_handler(
+    Extension(user): Extension<auth::AuthUser>,
+) -> Json<MeResponse> {
+    Json(MeResponse {
+        user_id: user.user_id,
+        email: user.email,
+    })
+}
+
 #[derive(utoipa::OpenApi)]
 #[openapi(
-    paths(health),
-    components(schemas(HealthResponse)),
+    paths(health, me_handler),
+    components(schemas(HealthResponse, MeResponse)),
     info(
         title = "ITER API",
         version = "0.1.0",
         description = "ITER MVP backend API. Source: srs/03-api.md."
     ),
     tags(
-        (name = "system", description = "Health and operational endpoints")
+        (name = "system", description = "Health and operational endpoints"),
+        (name = "auth", description = "Authenticated identity endpoints")
     )
 )]
 pub struct ApiDoc;

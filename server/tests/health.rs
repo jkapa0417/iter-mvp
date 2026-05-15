@@ -5,7 +5,10 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn health_returns_200_ok() {
-    let state = iter_server::AppState { db: None };
+    let state = iter_server::AppState {
+        db: None,
+        jwks: supabase_jwt::JwksCache::new("https://invalid.local/jwks"),
+    };
     let app = iter_server::app(state);
 
     let request = Request::builder()

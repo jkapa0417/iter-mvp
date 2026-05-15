@@ -104,12 +104,18 @@
 - SRS refs: srs/01-functional.md#auth
 
 ### F1.2 — Rust JWT verification middleware
-- [ ] Status: pending
+- [x] Status: done (iter 10)
 - Depends on: F1.1, F0.2
 - Acceptance:
-  - ES256/JWKS verification via supabase_jwt crate
-  - Middleware rejects invalid tokens
-  - Valid tokens pass user_id to handlers
+  - ES256/JWKS verification via supabase_jwt crate ✓
+  - Middleware rejects invalid tokens ✓ (no header / non-Bearer / garbage token all → 401, unit-tested)
+  - Valid tokens pass user_id to handlers ✓ (real Supabase JWT → `/me` returns 200 with `{user_id, email}` matching the token's `sub` claim; verified end-to-end against `test@iter.local`)
+- Implementation notes:
+  - `server/src/auth.rs` — `AuthUser` extension type + `require_auth` tower middleware. Routes are split into a public group (`/health`) and a protected nested router (currently just `/me`) layered with `from_fn_with_state(jwks_cache, require_auth)`.
+  - JWKS endpoint: `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (the `supabase-jwt` 0.1.1 docs point at the older `/auth/v1/jwks` path, which now returns 401 on Supabase — verified manually and corrected in our wrapper).
+  - JwksCache is cheap to clone (internal Arc/RwLock), lives in `AppState` directly.
+  - `/me` shape is the stand-in for F1.3 — F1.3 will replace its body with a DB-backed profile lookup.
+  - Cold cache: ~44ms per request (JWKS fetch). Warm: <1ms.
 - SRS refs: srs/04-nfr.md#security
 
 ### F1.3 — User profile bootstrap

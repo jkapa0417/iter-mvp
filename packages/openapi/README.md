@@ -47,13 +47,13 @@ Please follow the [installation procedure](#installation--usage) and then run th
 import 'package:openapi/openapi.dart';
 
 
-final api = Openapi().getSystemApi();
+final api = Openapi().getAuthApi();
 
 try {
-    final response = await api.health();
+    final response = await api.meHandler();
     print(response);
 } on DioException catch (e) {
-    print("Exception when calling SystemApi->health: $e\n");
+    print("Exception when calling AuthApi->meHandler: $e\n");
 }
 
 ```
@@ -64,12 +64,14 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+[*AuthApi*](doc/AuthApi.md) | [**meHandler**](doc/AuthApi.md#mehandler) | **GET** /me | 
 [*SystemApi*](doc/SystemApi.md) | [**health**](doc/SystemApi.md#health) | **GET** /health | 
 
 
 ## Documentation For Models
 
  - [HealthResponse](doc/HealthResponse.md)
+ - [MeResponse](doc/MeResponse.md)
 
 
 ## Documentation For Authorization

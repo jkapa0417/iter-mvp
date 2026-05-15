@@ -8,16 +8,16 @@ import 'package:built_value/json_object.dart';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
-import 'package:openapi/src/model/health_response.dart';
+import 'package:openapi/src/model/me_response.dart';
 
-class SystemApi {
+class AuthApi {
   final Dio _dio;
 
   final Serializers _serializers;
 
-  const SystemApi(this._dio, this._serializers);
+  const AuthApi(this._dio, this._serializers);
 
-  /// health
+  /// meHandler
   ///
   ///
   /// Parameters:
@@ -28,9 +28,9 @@ class SystemApi {
   /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
   /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
   ///
-  /// Returns a [Future] containing a [Response] with a [HealthResponse] as data
+  /// Returns a [Future] containing a [Response] with a [MeResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<HealthResponse>> health({
+  Future<Response<MeResponse>> meHandler({
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -38,7 +38,7 @@ class SystemApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/health';
+    final _path = r'/me';
     final _options = Options(
       method: r'GET',
       headers: <String, dynamic>{
@@ -59,7 +59,7 @@ class SystemApi {
       onReceiveProgress: onReceiveProgress,
     );
 
-    HealthResponse? _responseData;
+    MeResponse? _responseData;
 
     try {
       final rawResponse = _response.data;
@@ -67,8 +67,8 @@ class SystemApi {
           ? null
           : _serializers.deserialize(
               rawResponse,
-              specifiedType: const FullType(HealthResponse),
-            ) as HealthResponse;
+              specifiedType: const FullType(MeResponse),
+            ) as MeResponse;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -79,7 +79,7 @@ class SystemApi {
       );
     }
 
-    return Response<HealthResponse>(
+    return Response<MeResponse>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

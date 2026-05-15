@@ -6,7 +6,9 @@ part of 'serializers.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializers _$serializers =
-    (Serializers().toBuilder()..add(HealthResponse.serializer)).build();
+Serializers _$serializers = (Serializers().toBuilder()
+      ..add(HealthResponse.serializer)
+      ..add(MeResponse.serializer))
+    .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

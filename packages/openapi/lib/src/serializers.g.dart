@@ -8,7 +8,7 @@ part of 'serializers.dart';
 
 Serializers _$serializers = (Serializers().toBuilder()
       ..add(HealthResponse.serializer)
-      ..add(MeResponse.serializer))
+      ..add(UserProfile.serializer))
     .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

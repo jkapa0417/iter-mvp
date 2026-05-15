@@ -9,8 +9,8 @@ import 'package:openapi/src/auth/api_key_auth.dart';
 import 'package:openapi/src/auth/basic_auth.dart';
 import 'package:openapi/src/auth/bearer_auth.dart';
 import 'package:openapi/src/auth/oauth.dart';
-import 'package:openapi/src/api/auth_api.dart';
 import 'package:openapi/src/api/system_api.dart';
+import 'package:openapi/src/api/users_api.dart';
 
 class Openapi {
   static const String basePath = r'http://localhost';
@@ -132,15 +132,15 @@ class Openapi {
     }
   }
 
-  /// Get AuthApi instance, base route and serializer can be overridden by a given but be careful,
-  /// by doing that all interceptors will not be executed
-  AuthApi getAuthApi() {
-    return AuthApi(dio, serializers);
-  }
-
   /// Get SystemApi instance, base route and serializer can be overridden by a given but be careful,
   /// by doing that all interceptors will not be executed
   SystemApi getSystemApi() {
     return SystemApi(dio, serializers);
+  }
+
+  /// Get UsersApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  UsersApi getUsersApi() {
+    return UsersApi(dio, serializers);
   }
 }

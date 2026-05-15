@@ -51,6 +51,15 @@ elif ! command -v npx >/dev/null 2>&1; then
   RAN_DART_CLIENT=0
 else
   echo "📱 Generating Dart client via npx openapi-generator-cli..."
+  # Clean stale generated output. The generator writes new files but does NOT
+  # delete obsolete ones — e.g. renaming /me → /users/me leaves an orphan
+  # auth_api.dart that breaks `dart test`. Wipe what's deterministically
+  # regenerated; preserve pubspec.yaml + .gitignore + .dart_tool.
+  if [ -d "$DART_OUTPUT" ]; then
+    rm -rf "$DART_OUTPUT/lib" "$DART_OUTPUT/test" "$DART_OUTPUT/doc" \
+           "$DART_OUTPUT/.openapi-generator" \
+           "$DART_OUTPUT/.openapi-generator-ignore"
+  fi
   mkdir -p "$DART_OUTPUT"
   npx --yes @openapitools/openapi-generator-cli generate \
     -i "$OPENAPI_JSON" \

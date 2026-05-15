@@ -119,13 +119,18 @@
 - SRS refs: srs/04-nfr.md#security
 
 ### F1.3 — User profile bootstrap
-- [ ] Status: pending
-- Depends on: F1.2
+- [x] Status: done (iter 11)
 - Acceptance:
-  - `users` table created
-  - First login creates user row with default profile
-  - `GET /users/me` returns current user profile
-- SRS refs: srs/02-data-model.md#users
+  - `users` table created ✓ (F0.3 — 0001_init.sql)
+  - First login creates user row with default profile ✓ (auto-username `user_<8hex>`, email from JWT, empty bio/photo; verified end-to-end against `test@iter.local`)
+  - `GET /users/me` returns current user profile ✓ (200 with full UserProfile; idempotent on repeat calls)
+- Implementation notes:
+  - Migration 0002 adds RLS policies (`users_select_own / users_insert_self / users_update_own`) — defense-in-depth; server uses postgres superuser via Session pooler and bypasses RLS for app-layer authz.
+  - `server/src/users.rs` — single handler `get_or_bootstrap_me`. SELECT by `id = JWT.sub`; on miss, INSERT with `id = JWT.sub`, `username = format!("user_{}", &uuid.simple()[..8])`, `email = JWT.email`.
+  - Replaced placeholder `/me` from F1.2; OpenAPI tag now `users` instead of `auth`.
+  - Added direct deps: `uuid` (v4, serde) + `chrono` (serde, no-default).
+  - codegen.sh: added "clean stale generated output" step — when API surface changes (renamed endpoint / removed schema), the generator leaves orphans that break `dart test`. Wipe is scoped to deterministic regen targets.
+- SRS refs: srs/02-data-model.md#users (still backed by 0001_init schema)
 
 ---
 

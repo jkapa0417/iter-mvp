@@ -1,12 +1,11 @@
-use axum::{
-    extract::State, middleware, routing::get, Extension, Json, Router,
-};
+use axum::{extract::State, middleware, routing::get, Json, Router};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::time::Duration;
 use supabase_jwt::JwksCache;
 
 pub mod auth;
+pub mod users;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -78,10 +77,9 @@ pub fn init_jwks_cache() -> JwksCache {
 }
 
 pub fn app(state: AppState) -> Router {
-    // Routes that require a valid Supabase JWT. F1.3 will replace /me's body
-    // with a real user-profile lookup against the users table.
+    // Routes that require a valid Supabase JWT.
     let protected = Router::new()
-        .route("/me", get(me_handler))
+        .route("/users/me", get(users::get_or_bootstrap_me))
         .layer(middleware::from_fn_with_state(
             state.jwks.clone(),
             auth::require_auth,
@@ -132,37 +130,10 @@ pub async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
     })
 }
 
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct MeResponse {
-    /// Supabase Auth user UUID (the JWT `sub` claim).
-    pub user_id: String,
-    /// User's email, if present on the token.
-    pub email: Option<String>,
-}
-
-#[utoipa::path(
-    get,
-    path = "/me",
-    responses(
-        (status = 200, description = "The authenticated caller's identity", body = MeResponse),
-        (status = 401, description = "Missing or invalid Bearer token")
-    ),
-    security(("bearerAuth" = [])),
-    tag = "auth"
-)]
-pub async fn me_handler(
-    Extension(user): Extension<auth::AuthUser>,
-) -> Json<MeResponse> {
-    Json(MeResponse {
-        user_id: user.user_id,
-        email: user.email,
-    })
-}
-
 #[derive(utoipa::OpenApi)]
 #[openapi(
-    paths(health, me_handler),
-    components(schemas(HealthResponse, MeResponse)),
+    paths(health, users::get_or_bootstrap_me),
+    components(schemas(HealthResponse, users::UserProfile)),
     info(
         title = "ITER API",
         version = "0.1.0",
@@ -170,7 +141,7 @@ pub async fn me_handler(
     ),
     tags(
         (name = "system", description = "Health and operational endpoints"),
-        (name = "auth", description = "Authenticated identity endpoints")
+        (name = "users", description = "User profile endpoints")
     )
 )]
 pub struct ApiDoc;

@@ -1,10 +1,10 @@
 # Ralph Loop State
 
 ## Current
-- iteration: 10
-- last_completed: F1.2 (Rust JWT verification middleware — /me verified end-to-end with real Supabase token)
-- in_progress: none. Next autonomous candidate: F1.3 (User profile bootstrap — DB-backed /users/me).
-- last_run_at: 2026-05-16T02:30:00Z
+- iteration: 11
+- last_completed: F1.3 (User profile bootstrap; /users/me verified end-to-end — auto-creates row on first call, idempotent thereafter)
+- in_progress: none. F1 fully closed (except F1.1.5 OAuth which needs Apple Developer + Google Client). Next: F2 (photo upload pipeline) or F3 (globe — but blocks on F2.5 for pin data).
+- last_run_at: 2026-05-16T03:00:00Z
 
 ## Resume-now checklist (for next session)
 
@@ -19,6 +19,7 @@
 ## Recent (last 20)
 *This section will be trimmed to 20 entries by state-updater.*
 
+- F1.3 ✅ 2026-05-16 (iter 11) — DONE. Migration 0002 adds RLS policies on `users` (select_own / insert_self / update_own — all keyed on `id = auth.uid()`). `server/src/users.rs` exposes `GET /users/me` behind the F1.2 auth middleware: SELECT by `id = JWT.sub`; on miss, INSERT with auto-generated username `user_<8hex>`, email from JWT, returning the new row. End-to-end verified against test@iter.local: call 1 logged `bootstrapped new user profile`, call 2 returned identical row (same created_at — properly idempotent). Server connects as postgres superuser via Session pooler and bypasses RLS by design; policies are defense-in-depth for Supabase dashboard / future direct-from-client queries. Added direct deps uuid (v4, serde) + chrono (serde, no-default). codegen.sh now cleans stale generated output before regen — fixes orphan files when API surface changes (e.g. /me → /users/me).
 - F1.2 ✅ 2026-05-16 (iter 10) — DONE. `server/src/auth.rs` wraps `supabase_jwt::Claims::from_bearer_token` in an Axum `from_fn_with_state` tower middleware. Public router (`/health`) and protected nested router (`/me` for now; F1.3 owns the DB lookup) merged. JwksCache lives in AppState (Clone-cheap, internal Arc/RwLock). Verified: 3 negative-case unit tests (no header / non-Bearer / garbage token → 401), 1 happy-path manual test against a real Supabase JWT issued for test@iter.local → 200 with correct `user_id` + `email`. Cold JWKS fetch ~44ms, warm <1ms. Important fix: Supabase moved JWKS to `/auth/v1/.well-known/jwks.json`; the `supabase-jwt` 0.1.1 docs still point at the legacy `/auth/v1/jwks` (which returns 401) — corrected in `auth::jwks_url_from_supabase_url`. Dart client regenerated; AuthApi.meHandler now exists in packages/openapi.
 - F1.1 ✅ 2026-05-16 (iter 9) — DONE for email/password. supabase_flutter + flutter_dotenv wired. main.dart now bootstraps Supabase from app/.env (gitignored, only public keys client-side) and routes via _AuthGate (StreamBuilder on onAuthStateChange) between LoginScreen and HomeScreen. Verified on Galaxy Z Fold 5: sign-in with test@iter.local lands on HomeScreen; cold-restart preserves session and lands on HomeScreen automatically; sign-out returns to LoginScreen. Apple/Google sign-in buttons wired with "coming soon" snackbars — actual OAuth carved out as F1.1.5 (needs Apple Developer + Google Client ID setup). EXIF spike screen replaced (its result preserved in ADR-009 + git history). flutter analyze + flutter test green. Also: ADR-010 locks the F3 home pivot (3D globe + 2D country drill-down via flutter_earth_globe + maplibre_gl). F0.6 CI workflow first run was green end-to-end (6m27s, all 4 jobs).
 - F0.4 ✅ 2026-05-16 (iter 8 continued) — DONE for Android. Spike verified end-to-end on Galaxy Z Fold 5 (Android 16): a freshly captured outdoor photo yielded EXIF lat `37.568552`, lng `126.839713`, MediaStore latlng matching to 6 decimal places, DateTimeOriginal + camera Make/Model preserved. Confirms (a) photo_manager bypasses the Android 13+ Photo Picker redaction, (b) the `_gps` DMS-to-decimal helper is correct, (c) MediaStore and EXIF are two independent paths that agree (strong evidence). Spike screen also classified three real-world states: GPS present (camera-original), GPS zeroed (image_picker path, never on photo_manager), GPS absent (messenger-received photos, no Image Make/Model either). Newest-first ordering required explicit FilterOptionGroup. See ADR-009. iOS half remains environment-deferred.

@@ -15,13 +15,13 @@ import 'package:openapi/src/date_serializer.dart';
 import 'package:openapi/src/model/date.dart';
 
 import 'package:openapi/src/model/health_response.dart';
-import 'package:openapi/src/model/me_response.dart';
+import 'package:openapi/src/model/user_profile.dart';
 
 part 'serializers.g.dart';
 
 @SerializersFor([
   HealthResponse,
-  MeResponse,
+  UserProfile,
 ])
 Serializers serializers = (_$serializers.toBuilder()
       ..add(const OneOfSerializer())

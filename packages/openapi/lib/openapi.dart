@@ -10,8 +10,8 @@ export 'package:openapi/src/auth/oauth.dart';
 export 'package:openapi/src/serializers.dart';
 export 'package:openapi/src/model/date.dart';
 
-export 'package:openapi/src/api/auth_api.dart';
 export 'package:openapi/src/api/system_api.dart';
+export 'package:openapi/src/api/users_api.dart';
 
 export 'package:openapi/src/model/health_response.dart';
-export 'package:openapi/src/model/me_response.dart';
+export 'package:openapi/src/model/user_profile.dart';

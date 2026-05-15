@@ -24,7 +24,7 @@ fn build_app() -> axum::Router {
 async fn me_without_header_returns_401() {
     let app = build_app();
     let response = app
-        .oneshot(Request::builder().uri("/me").body(Body::empty()).unwrap())
+        .oneshot(Request::builder().uri("/users/me").body(Body::empty()).unwrap())
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
@@ -36,7 +36,7 @@ async fn me_with_non_bearer_header_returns_401() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/me")
+                .uri("/users/me")
                 .header("authorization", "Basic Zm9vOmJhcg==")
                 .body(Body::empty())
                 .unwrap(),
@@ -52,7 +52,7 @@ async fn me_with_garbage_token_returns_401() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/me")
+                .uri("/users/me")
                 .header("authorization", "Bearer not.a.real.jwt")
                 .body(Body::empty())
                 .unwrap(),

@@ -1,4 +1,4 @@
-# openapi.api.AuthApi
+# openapi.api.UsersApi
 
 ## Load the API package
 ```dart
@@ -9,11 +9,11 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**meHandler**](AuthApi.md#mehandler) | **GET** /me | 
+[**getOrBootstrapMe**](UsersApi.md#getorbootstrapme) | **GET** /users/me | 
 
 
-# **meHandler**
-> MeResponse meHandler()
+# **getOrBootstrapMe**
+> UserProfile getOrBootstrapMe()
 
 
 
@@ -21,13 +21,13 @@ Method | HTTP request | Description
 ```dart
 import 'package:openapi/api.dart';
 
-final api = Openapi().getAuthApi();
+final api = Openapi().getUsersApi();
 
 try {
-    final response = api.meHandler();
+    final response = api.getOrBootstrapMe();
     print(response);
 } on DioException catch (e) {
-    print('Exception when calling AuthApi->meHandler: $e\n');
+    print('Exception when calling UsersApi->getOrBootstrapMe: $e\n');
 }
 ```
 
@@ -36,7 +36,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**MeResponse**](MeResponse.md)
+[**UserProfile**](UserProfile.md)
 
 ### Authorization
 
